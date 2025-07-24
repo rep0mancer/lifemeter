@@ -76,7 +76,7 @@ final class LifeMeterPerformanceTests: XCTestCase {
         
         // Test fetch performance
         measure {
-            let fetchRequest: NSFetchRequest<HistoryEntry> = HistoryEntry.fetchRequest()
+            let fetchRequest: NSFetchRequest = HistoryEntry.fetchRequest()
             fetchRequest.sortDescriptors = [NSSortDescriptor(keyPath: \HistoryEntry.timestamp, ascending: false)]
             fetchRequest.fetchLimit = 100
             
@@ -103,12 +103,12 @@ final class LifeMeterPerformanceTests: XCTestCase {
         
         // Test complex query performance
         measure {
-            let fetchRequest: NSFetchRequest<HistoryEntry> = HistoryEntry.fetchRequest()
+            let fetchRequest: NSFetchRequest = HistoryEntry.fetchRequest()
             
             // Complex predicate: last 30 days, EUR currency, price > 50
             let thirtyDaysAgo = Date().addingTimeInterval(-30 * 24 * 3600)
             fetchRequest.predicate = NSPredicate(format: "timestamp >= %@ AND currency == %@ AND price > %@", 
-                                               thirtyDaysAgo as NSDate, "EUR", NSNumber(value: 50.0))
+                                                thirtyDaysAgo as NSDate, "EUR", NSNumber(value: 50.0))
             fetchRequest.sortDescriptors = [NSSortDescriptor(keyPath: \HistoryEntry.timestamp, ascending: false)]
             
             _ = try! testContext.fetch(fetchRequest)
@@ -131,7 +131,7 @@ final class LifeMeterPerformanceTests: XCTestCase {
         
         // Test batch delete performance
         measure {
-            let fetchRequest: NSFetchRequest<NSFetchRequestResult> = HistoryEntry.fetchRequest()
+            let fetchRequest: NSFetchRequest = HistoryEntry.fetchRequest()
             let oneWeekAgo = Date().addingTimeInterval(-7 * 24 * 3600)
             fetchRequest.predicate = NSPredicate(format: "timestamp < %@", oneWeekAgo as NSDate)
             
@@ -144,7 +144,7 @@ final class LifeMeterPerformanceTests: XCTestCase {
     
     func testCalculationEngine_BulkCalculations_PerformsWell() {
         let testCases = (0..<1000).map { i in
-            (price: Double(i % 500) + 0.99, 
+            (price: Double(i % 500) + 0.99,
              currency: ["EUR", "USD", "GBP"][i % 3],
              wage: Double(i % 50) + 10.0,
              wageCurrency: ["EUR", "USD", "GBP"][i % 3])
@@ -228,7 +228,7 @@ final class LifeMeterPerformanceTests: XCTestCase {
     
     func testFileAttachments_Statistics_PerformsWell() {
         // Setup test attachments
-        for i in 0..<200 {
+        for _ in 0..<200 {
             let image = createTestImage()
             let id = UUID()
             try! attachmentManager.saveAttachment(image, for: id)
@@ -377,8 +377,8 @@ final class LifeMeterPerformanceTests: XCTestCase {
         
         // Add many spending entries
         let keychainManager = HardenedKeychainManager.shared
-        let wageData = WageData(amount: 20.0, currency: "EUR", period: .hourly)
-        try! keychainManager.saveWage(wageData)
+        let wageData2 = WageData(amount: 20.0, currency: "EUR", period: .hourly)
+        try! keychainManager.saveWage(wageData2)
         
         for i in 0..<1000 {
             let amount = Double(i % 30) + 1.0
@@ -530,7 +530,7 @@ final class LifeMeterPerformanceTests: XCTestCase {
         XCTAssertLessThan(memoryIncrease, 100 * 1024 * 1024) // 100MB
         
         // Perform operations and check memory doesn't grow excessively
-        let fetchRequest: NSFetchRequest<HistoryEntry> = HistoryEntry.fetchRequest()
+        let fetchRequest: NSFetchRequest = HistoryEntry.fetchRequest()
         fetchRequest.fetchLimit = 1000
         
         for _ in 0..<10 {
@@ -579,9 +579,9 @@ final class LifeMeterPerformanceTests: XCTestCase {
         
         let startTime = Date()
         
-        for i in 0..<5 {
+        for _ in 0..<5 {
             DispatchQueue.global(qos: .userInitiated).async {
-                for j in 0..<20 {
+                for _ in 0..<20 {
                     let image = self.createTestImage()
                     let id = UUID()
                     try! self.attachmentManager.saveAttachment(image, for: id)
@@ -598,15 +598,151 @@ final class LifeMeterPerformanceTests: XCTestCase {
     
     // MARK: - Helper Methods
     
+    /// Creates an in-memory Core Data stack using the real data model.
+    ///
+    /// The default implementation of this method in the original performance tests
+    /// used an empty `NSManagedObjectModel`, which meant that no entities were
+    /// available during the test runs.  This caused any operations on
+    /// `HistoryEntry` or `TimeBudgetEntity` to crash.  To faithfully exercise
+    /// the same Core Data stack used by the app, this implementation loads the
+    /// merged model from the `HistoryStore` bundle and ensures that both
+    /// `HistoryEntry` and `TimeBudgetEntity` are present.  It then creates an
+    /// `NSPersistentStoreCoordinator` with an in-memory store and returns a
+    /// main‑queue context.
     private func createTestContext() -> NSManagedObjectContext {
-        let model = NSManagedObjectModel()
-        let coordinator = NSPersistentStoreCoordinator(managedObjectModel: model)
+        // Load the actual Core Data model bundled with HistoryStore
+        let historyBundle = Bundle(for: DataController.self)
+        guard let model = NSManagedObjectModel.mergedModel(from: [historyBundle]) else {
+            fatalError("Failed to load LifeMeterModel")
+        }
         
+        // Ensure HistoryEntry entity exists (older model versions may exclude it)
+        if model.entitiesByName["HistoryEntry"] == nil {
+            let entity = NSEntityDescription()
+            entity.name = "HistoryEntry"
+            entity.managedObjectClassName = "HistoryEntry"
+            
+            // Attributes
+            let calculationId = NSAttributeDescription()
+            calculationId.name = "calculationId"
+            calculationId.attributeType = .UUIDAttributeType
+            calculationId.isOptional = true
+            
+            let timestamp = NSAttributeDescription()
+            timestamp.name = "timestamp"
+            timestamp.attributeType = .dateAttributeType
+            timestamp.isOptional = false
+            
+            let price = NSAttributeDescription()
+            price.name = "price"
+            price.attributeType = .doubleAttributeType
+            price.defaultValue = 0.0
+            
+            let currency = NSAttributeDescription()
+            currency.name = "currency"
+            currency.attributeType = .stringAttributeType
+            currency.isOptional = false
+            
+            let workMinutes = NSAttributeDescription()
+            workMinutes.name = "workMinutes"
+            workMinutes.attributeType = .doubleAttributeType
+            workMinutes.defaultValue = 0.0
+            
+            let source = NSAttributeDescription()
+            source.name = "source"
+            source.attributeType = .stringAttributeType
+            source.isOptional = true
+            
+            let photoData = NSAttributeDescription()
+            photoData.name = "photoData"
+            photoData.attributeType = .binaryDataAttributeType
+            photoData.isOptional = true
+            photoData.allowsExternalBinaryDataStorage = true
+            
+            let attachmentURL = NSAttributeDescription()
+            attachmentURL.name = "attachmentURL"
+            attachmentURL.attributeType = .URIAttributeType
+            attachmentURL.isOptional = true
+            
+            entity.properties = [
+                calculationId,
+                timestamp,
+                price,
+                currency,
+                workMinutes,
+                source,
+                photoData,
+                attachmentURL
+            ]
+            
+            model.entities.append(entity)
+        }
+        
+        // Ensure TimeBudgetEntity is available for tests
+        if model.entitiesByName["TimeBudgetEntity"] == nil {
+            let entity = NSEntityDescription()
+            entity.name = "TimeBudgetEntity"
+            entity.managedObjectClassName = "TimeBudgetEntity"
+            
+            let id = NSAttributeDescription()
+            id.name = "id"
+            id.attributeType = .UUIDAttributeType
+            id.isOptional = false
+            
+            let name = NSAttributeDescription()
+            name.name = "name"
+            name.attributeType = .stringAttributeType
+            name.isOptional = false
+            
+            let totalWorkMinutes = NSAttributeDescription()
+            totalWorkMinutes.name = "totalWorkMinutes"
+            totalWorkMinutes.attributeType = .doubleAttributeType
+            totalWorkMinutes.defaultValue = 0.0
+            
+            let period = NSAttributeDescription()
+            period.name = "period"
+            period.attributeType = .stringAttributeType
+            period.isOptional = false
+            
+            let categoriesData = NSAttributeDescription()
+            categoriesData.name = "categoriesData"
+            categoriesData.attributeType = .binaryDataAttributeType
+            categoriesData.isOptional = false
+            
+            let spendingData = NSAttributeDescription()
+            spendingData.name = "spendingData"
+            spendingData.attributeType = .binaryDataAttributeType
+            spendingData.isOptional = false
+            
+            let createdAt = NSAttributeDescription()
+            createdAt.name = "createdAt"
+            createdAt.attributeType = .dateAttributeType
+            createdAt.isOptional = false
+            
+            let periodStartDate = NSAttributeDescription()
+            periodStartDate.name = "periodStartDate"
+            periodStartDate.attributeType = .dateAttributeType
+            periodStartDate.isOptional = false
+            
+            entity.properties = [
+                id,
+                name,
+                totalWorkMinutes,
+                period,
+                categoriesData,
+                spendingData,
+                createdAt,
+                periodStartDate
+            ]
+            
+            model.entities.append(entity)
+        }
+        
+        let coordinator = NSPersistentStoreCoordinator(managedObjectModel: model)
         try! coordinator.addPersistentStore(ofType: NSInMemoryStoreType, configurationName: nil, at: nil, options: nil)
         
         let context = NSManagedObjectContext(concurrencyType: .mainQueueConcurrencyType)
         context.persistentStoreCoordinator = coordinator
-        
         return context
     }
     
@@ -615,16 +751,16 @@ final class LifeMeterPerformanceTests: XCTestCase {
         UIGraphicsBeginImageContextWithOptions(size, false, 0.0)
         defer { UIGraphicsEndImageContext() }
         
-        let context = UIGraphicsGetCurrentContext()!
-        context.setFillColor(UIColor.random.cgColor)
-        context.fill(CGRect(origin: .zero, size: size))
+        let ctx = UIGraphicsGetCurrentContext()!
+        ctx.setFillColor(UIColor.random.cgColor)
+        ctx.fill(CGRect(origin: .zero, size: size))
         
         return UIGraphicsGetImageFromCurrentImageContext()!
     }
     
     private func cleanupTestData() {
         // Clean up Core Data
-        let fetchRequest: NSFetchRequest<NSFetchRequestResult> = HistoryEntry.fetchRequest()
+        let fetchRequest: NSFetchRequest = HistoryEntry.fetchRequest()
         let deleteRequest = NSBatchDeleteRequest(fetchRequest: fetchRequest)
         try? testContext.execute(deleteRequest)
         
@@ -638,7 +774,7 @@ final class LifeMeterPerformanceTests: XCTestCase {
     
     private func getMemoryUsage() -> UInt64 {
         var info = mach_task_basic_info()
-        var count = mach_msg_type_number_t(MemoryLayout<mach_task_basic_info>.size)/4
+        var count = mach_msg_type_number_t(MemoryLayout.size(ofValue: info))/4
         
         let kerr: kern_return_t = withUnsafeMutablePointer(to: &info) {
             $0.withMemoryRebound(to: integer_t.self, capacity: 1) {
@@ -675,7 +811,7 @@ class WidgetSnapshotGenerator {
         UIGraphicsBeginImageContextWithOptions(size, false, 0.0)
         defer { UIGraphicsEndImageContext() }
         
-        let context = UIGraphicsGetCurrentContext()!
+        let ctx = UIGraphicsGetCurrentContext()!
         
         // Simple colored rectangle based on cat state
         let color: UIColor
@@ -690,10 +826,9 @@ class WidgetSnapshotGenerator {
             color = .red
         }
         
-        context.setFillColor(color.cgColor)
-        context.fill(CGRect(origin: .zero, size: size))
+        ctx.setFillColor(color.cgColor)
+        ctx.fill(CGRect(origin: .zero, size: size))
         
         return UIGraphicsGetImageFromCurrentImageContext()!
     }
 }
-
