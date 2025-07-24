@@ -15,7 +15,12 @@ let package = Package(
         .library(name: "CatRenderer", targets: ["CatRenderer"]),
         .library(name: "HistoryStore", targets: ["HistoryStore"]),
         .library(name: "LifeWidget", targets: ["LifeWidget"]),
-        .library(name: "AppShell", targets: ["AppShell"])
+        .library(name: "AppShell", targets: ["AppShell"]),
+        // Newly exposed modules
+        .library(name: "ExchangeRates", targets: ["ExchangeRates"]),
+        .library(name: "TimeBudget", targets: ["TimeBudget"]),
+        .library(name: "SocialSharing", targets: ["SocialSharing"]),
+        .library(name: "TransactionLogger", targets: ["TransactionLogger"])
     ],
     dependencies: [
         // No external dependencies - privacy-first approach
@@ -76,6 +81,49 @@ let package = Package(
             name: "CatRendererTests",
             dependencies: ["CatRenderer"],
             path: "Modules/CatRenderer/Tests"
+        ),
+
+        // MARK: - Utility Modules
+        .target(
+            name: "ExchangeRates",
+            path: "Modules/ExchangeRates/Sources"
+        ),
+        .testTarget(
+            name: "ExchangeRatesTests",
+            dependencies: ["ExchangeRates"],
+            path: "Modules/ExchangeRates/Tests"
+        ),
+
+        .target(
+            name: "TimeBudget",
+            dependencies: ["AppShell"],
+            path: "Modules/TimeBudget/Sources"
+        ),
+        .testTarget(
+            name: "TimeBudgetTests",
+            dependencies: ["TimeBudget"],
+            path: "Modules/TimeBudget/Tests"
+        ),
+
+        .target(
+            name: "SocialSharing",
+            path: "Modules/SocialSharing/Sources"
+        ),
+        .testTarget(
+            name: "SocialSharingTests",
+            dependencies: ["SocialSharing"],
+            path: "Modules/SocialSharing/Tests"
+        ),
+
+        .target(
+            name: "TransactionLogger",
+            dependencies: ["CalcCore", "HistoryStore"],
+            path: "Modules/TransactionLogger/Sources"
+        ),
+        .testTarget(
+            name: "TransactionLoggerTests",
+            dependencies: ["TransactionLogger", "CalcCore", "HistoryStore"],
+            path: "Modules/TransactionLogger/Tests"
         ),
         
         // MARK: - Widget Extension
