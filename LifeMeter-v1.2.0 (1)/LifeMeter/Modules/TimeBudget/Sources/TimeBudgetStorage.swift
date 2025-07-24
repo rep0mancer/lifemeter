@@ -108,7 +108,7 @@ public class TimeBudgetStorage {
         let totalSpending = budgets.flatMap { $0.spending }.count
         
         let totalAllocatedTime = budgets.reduce(0) { $0 + $1.totalWorkMinutes }
-        let totalUsedTime = budgets.reduce(0) { budget, total in
+        let totalUsedTime = budgets.reduce(0) { total, budget in
             total + budget.spending.reduce(0) { $0 + $1.workMinutes }
         }
         
