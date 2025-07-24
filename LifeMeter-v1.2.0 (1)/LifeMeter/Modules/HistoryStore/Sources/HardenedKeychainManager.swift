@@ -511,7 +511,12 @@ public class KeychainManagerFactory {
             biometricPolicy = .disabled
         }
         
-        return HardenedKeychainManager.shared
+        // Return a new HardenedKeychainManager configured with the determined
+        // security level and biometric policy instead of the shared instance.
+        return HardenedKeychainManager(
+            securityLevel: securityLevel,
+            biometricPolicy: biometricPolicy
+        )
     }
 }
 
