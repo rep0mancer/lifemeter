@@ -97,7 +97,6 @@ public class KeychainManager {
     ///
     /// - Parameter wage: The `Wage` to save.
     /// - Throws: Rethrows any error thrown by ``HardenedKeychainManager.saveWage(_:)``.
-    @discardableResult
     public func saveWage(_ wage: Wage) throws {
         let wageData = WageData(amount: wage.amount, currency: wage.currency, period: wage.period)
         try HardenedKeychainManager.shared.saveWage(wageData)
@@ -109,7 +108,6 @@ public class KeychainManager {
     /// Deletes wage information from both the hardened keychain and the legacy keys.
     ///
     /// - Throws: Rethrows any error thrown by ``HardenedKeychainManager.deleteWage()``.
-    @discardableResult
     public func deleteWage() throws {
         try HardenedKeychainManager.shared.deleteWage()
         // Remove legacy keys
