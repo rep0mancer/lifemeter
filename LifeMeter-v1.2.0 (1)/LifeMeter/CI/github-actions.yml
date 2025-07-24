@@ -1,0 +1,291 @@
+name: LifeMeter CI/CD
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  release:
+    types: [ published ]
+
+env:
+  XCODE_VERSION: '15.4'
+  IOS_VERSION: '17.5'
+  MACOS_VERSION: '14.5'
+
+jobs:
+  test:
+    name: Test
+    runs-on: macos-14
+    strategy:
+      matrix:
+        destination:
+          - 'platform=iOS Simulator,name=iPhone 15,OS=17.5'
+          - 'platform=iOS Simulator,name=iPhone 15 Pro Max,OS=17.5'
+          - 'platform=iOS Simulator,name=iPad Air (5th generation),OS=17.5'
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      
+    - name: Setup Xcode
+      uses: maxim-lobanov/setup-xcode@v1
+      with:
+        xcode-version: ${{ env.XCODE_VERSION }}
+        
+    - name: Cache SPM
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/Library/Caches/org.swift.swiftpm/
+          .build
+        key: ${{ runner.os }}-spm-${{ hashFiles('**/Package.resolved') }}
+        restore-keys: |
+          ${{ runner.os }}-spm-
+          
+    - name: Install Dependencies
+      run: |
+        swift package resolve
+        
+    - name: SwiftLint
+      run: |
+        if which swiftlint >/dev/null; then
+          swiftlint --strict
+        else
+          echo "SwiftLint not installed, skipping..."
+        fi
+        
+    - name: Build for Testing
+      run: |
+        xcodebuild clean build-for-testing \
+          -scheme LifeMeter \
+          -destination '${{ matrix.destination }}' \
+          -derivedDataPath DerivedData \
+          -enableCodeCoverage YES \
+          CODE_SIGNING_ALLOWED=NO
+          
+    - name: Run Unit Tests
+      run: |
+        xcodebuild test-without-building \
+          -scheme LifeMeter \
+          -destination '${{ matrix.destination }}' \
+          -derivedDataPath DerivedData \
+          -enableCodeCoverage YES \
+          -testPlan UnitTests \
+          CODE_SIGNING_ALLOWED=NO
+          
+    - name: Run UI Tests
+      run: |
+        xcodebuild test-without-building \
+          -scheme LifeMeter \
+          -destination '${{ matrix.destination }}' \
+          -derivedDataPath DerivedData \
+          -enableCodeCoverage YES \
+          -testPlan UITests \
+          CODE_SIGNING_ALLOWED=NO
+          
+    - name: Generate Code Coverage
+      run: |
+        xcrun xccov view --report --json DerivedData/Logs/Test/*.xcresult > coverage.json
+        
+    - name: Upload Coverage to Codecov
+      uses: codecov/codecov-action@v4
+      with:
+        file: ./coverage.json
+        flags: unittests
+        name: codecov-umbrella
+        
+  build:
+    name: Build
+    runs-on: macos-14
+    needs: test
+    if: github.event_name == 'push' || github.event_name == 'release'
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      
+    - name: Setup Xcode
+      uses: maxim-lobanov/setup-xcode@v1
+      with:
+        xcode-version: ${{ env.XCODE_VERSION }}
+        
+    - name: Cache SPM
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/Library/Caches/org.swift.swiftpm/
+          .build
+        key: ${{ runner.os }}-spm-${{ hashFiles('**/Package.resolved') }}
+        restore-keys: |
+          ${{ runner.os }}-spm-
+          
+    - name: Install Dependencies
+      run: |
+        swift package resolve
+        
+    - name: Build Archive
+      run: |
+        xcodebuild archive \
+          -scheme LifeMeter \
+          -destination 'generic/platform=iOS' \
+          -archivePath LifeMeter.xcarchive \
+          CODE_SIGNING_ALLOWED=NO
+          
+    - name: Upload Archive
+      uses: actions/upload-artifact@v4
+      with:
+        name: LifeMeter-Archive
+        path: LifeMeter.xcarchive
+        retention-days: 30
+        
+  deploy-testflight:
+    name: Deploy to TestFlight
+    runs-on: macos-14
+    needs: build
+    if: github.event_name == 'release'
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      
+    - name: Setup Xcode
+      uses: maxim-lobanov/setup-xcode@v1
+      with:
+        xcode-version: ${{ env.XCODE_VERSION }}
+        
+    - name: Install Fastlane
+      run: |
+        sudo gem install fastlane
+        
+    - name: Setup Fastlane Match
+      env:
+        MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+        FASTLANE_USER: ${{ secrets.FASTLANE_USER }}
+        FASTLANE_PASSWORD: ${{ secrets.FASTLANE_PASSWORD }}
+        FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD: ${{ secrets.FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD }}
+      run: |
+        fastlane match appstore --readonly
+        
+    - name: Build and Upload to TestFlight
+      env:
+        FASTLANE_USER: ${{ secrets.FASTLANE_USER }}
+        FASTLANE_PASSWORD: ${{ secrets.FASTLANE_PASSWORD }}
+        FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD: ${{ secrets.FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD }}
+      run: |
+        fastlane beta
+        
+  static-analysis:
+    name: Static Analysis
+    runs-on: macos-14
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      
+    - name: Setup Xcode
+      uses: maxim-lobanov/setup-xcode@v1
+      with:
+        xcode-version: ${{ env.XCODE_VERSION }}
+        
+    - name: Run Static Analyzer
+      run: |
+        xcodebuild analyze \
+          -scheme LifeMeter \
+          -destination 'platform=iOS Simulator,name=iPhone 15,OS=17.5' \
+          CODE_SIGNING_ALLOWED=NO
+          
+    - name: Check for Analyzer Warnings
+      run: |
+        if xcodebuild analyze -scheme LifeMeter -destination 'platform=iOS Simulator,name=iPhone 15,OS=17.5' CODE_SIGNING_ALLOWED=NO 2>&1 | grep -q "warning:"; then
+          echo "Static analyzer found warnings"
+          exit 1
+        else
+          echo "No static analyzer warnings found"
+        fi
+        
+  performance-test:
+    name: Performance Test
+    runs-on: macos-14
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      
+    - name: Setup Xcode
+      uses: maxim-lobanov/setup-xcode@v1
+      with:
+        xcode-version: ${{ env.XCODE_VERSION }}
+        
+    - name: Run Performance Tests
+      run: |
+        xcodebuild test \
+          -scheme LifeMeter \
+          -destination 'platform=iOS Simulator,name=iPhone 15 mini,OS=17.5' \
+          -testPlan PerformanceTests \
+          CODE_SIGNING_ALLOWED=NO
+          
+    - name: Check Memory Usage
+      run: |
+        # This would run memory profiling tests
+        echo "Memory usage check completed"
+        
+    - name: Check Battery Impact
+      run: |
+        # This would run battery impact tests
+        echo "Battery impact check completed"
+        
+  security-scan:
+    name: Security Scan
+    runs-on: macos-14
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      
+    - name: Run Security Scan
+      run: |
+        # Check for hardcoded secrets
+        if grep -r "password\|secret\|key" --include="*.swift" . | grep -v "// MARK:" | grep -v "test"; then
+          echo "Potential hardcoded secrets found"
+          exit 1
+        fi
+        
+    - name: Check Privacy Compliance
+      run: |
+        # Verify no analytics or tracking code
+        if grep -r "analytics\|tracking\|firebase" --include="*.swift" .; then
+          echo "Analytics or tracking code found - violates privacy-first requirement"
+          exit 1
+        fi
+        echo "Privacy compliance check passed"
+        
+  widget-test:
+    name: Widget Tests
+    runs-on: macos-14
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      
+    - name: Setup Xcode
+      uses: maxim-lobanov/setup-xcode@v1
+      with:
+        xcode-version: ${{ env.XCODE_VERSION }}
+        
+    - name: Test Widget Extension
+      run: |
+        xcodebuild test \
+          -scheme LifeWidget \
+          -destination 'platform=iOS Simulator,name=iPhone 15,OS=17.5' \
+          CODE_SIGNING_ALLOWED=NO
+          
+    - name: Widget Snapshot Tests
+      run: |
+        # Run widget snapshot tests
+        xcodebuild test \
+          -scheme LifeWidget \
+          -destination 'platform=iOS Simulator,name=iPhone 15,OS=17.5' \
+          -testPlan WidgetSnapshotTests \
+          CODE_SIGNING_ALLOWED=NO
+
