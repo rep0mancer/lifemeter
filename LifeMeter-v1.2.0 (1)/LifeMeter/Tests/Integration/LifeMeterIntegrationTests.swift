@@ -488,14 +488,139 @@ final class LifeMeterIntegrationTests: XCTestCase {
     // MARK: - Helper Methods
     
     private func createTestContext() -> NSManagedObjectContext {
-        let model = NSManagedObjectModel()
+        // Load the actual Core Data model bundled with HistoryStore
+        let historyBundle = Bundle(for: DataController.self)
+        guard let model = NSManagedObjectModel.mergedModel(from: [historyBundle]) else {
+            fatalError("Failed to load LifeMeterModel")
+        }
+
+        // Ensure HistoryEntry entity exists (older model versions may exclude it)
+        if model.entitiesByName["HistoryEntry"] == nil {
+            let entity = NSEntityDescription()
+            entity.name = "HistoryEntry"
+            entity.managedObjectClassName = "HistoryEntry"
+
+            // Attributes
+            let calculationId = NSAttributeDescription()
+            calculationId.name = "calculationId"
+            calculationId.attributeType = .UUIDAttributeType
+            calculationId.isOptional = true
+
+            let timestamp = NSAttributeDescription()
+            timestamp.name = "timestamp"
+            timestamp.attributeType = .dateAttributeType
+            timestamp.isOptional = false
+
+            let price = NSAttributeDescription()
+            price.name = "price"
+            price.attributeType = .doubleAttributeType
+            price.defaultValue = 0.0
+
+            let currency = NSAttributeDescription()
+            currency.name = "currency"
+            currency.attributeType = .stringAttributeType
+            currency.isOptional = false
+
+            let workMinutes = NSAttributeDescription()
+            workMinutes.name = "workMinutes"
+            workMinutes.attributeType = .doubleAttributeType
+            workMinutes.defaultValue = 0.0
+
+            let source = NSAttributeDescription()
+            source.name = "source"
+            source.attributeType = .stringAttributeType
+            source.isOptional = true
+
+            let photoData = NSAttributeDescription()
+            photoData.name = "photoData"
+            photoData.attributeType = .binaryDataAttributeType
+            photoData.isOptional = true
+            photoData.allowsExternalBinaryDataStorage = true
+
+            let attachmentURL = NSAttributeDescription()
+            attachmentURL.name = "attachmentURL"
+            attachmentURL.attributeType = .URIAttributeType
+            attachmentURL.isOptional = true
+
+            entity.properties = [
+                calculationId,
+                timestamp,
+                price,
+                currency,
+                workMinutes,
+                source,
+                photoData,
+                attachmentURL
+            ]
+
+            model.entities.append(entity)
+        }
+
+        // Ensure TimeBudgetEntity is available for tests
+        if model.entitiesByName["TimeBudgetEntity"] == nil {
+            let entity = NSEntityDescription()
+            entity.name = "TimeBudgetEntity"
+            entity.managedObjectClassName = "TimeBudgetEntity"
+
+            let id = NSAttributeDescription()
+            id.name = "id"
+            id.attributeType = .UUIDAttributeType
+            id.isOptional = false
+
+            let name = NSAttributeDescription()
+            name.name = "name"
+            name.attributeType = .stringAttributeType
+            name.isOptional = false
+
+            let totalWorkMinutes = NSAttributeDescription()
+            totalWorkMinutes.name = "totalWorkMinutes"
+            totalWorkMinutes.attributeType = .doubleAttributeType
+            totalWorkMinutes.defaultValue = 0.0
+
+            let period = NSAttributeDescription()
+            period.name = "period"
+            period.attributeType = .stringAttributeType
+            period.isOptional = false
+
+            let categoriesData = NSAttributeDescription()
+            categoriesData.name = "categoriesData"
+            categoriesData.attributeType = .binaryDataAttributeType
+            categoriesData.isOptional = false
+
+            let spendingData = NSAttributeDescription()
+            spendingData.name = "spendingData"
+            spendingData.attributeType = .binaryDataAttributeType
+            spendingData.isOptional = false
+
+            let createdAt = NSAttributeDescription()
+            createdAt.name = "createdAt"
+            createdAt.attributeType = .dateAttributeType
+            createdAt.isOptional = false
+
+            let periodStartDate = NSAttributeDescription()
+            periodStartDate.name = "periodStartDate"
+            periodStartDate.attributeType = .dateAttributeType
+            periodStartDate.isOptional = false
+
+            entity.properties = [
+                id,
+                name,
+                totalWorkMinutes,
+                period,
+                categoriesData,
+                spendingData,
+                createdAt,
+                periodStartDate
+            ]
+
+            model.entities.append(entity)
+        }
+
         let coordinator = NSPersistentStoreCoordinator(managedObjectModel: model)
-        
         try! coordinator.addPersistentStore(ofType: NSInMemoryStoreType, configurationName: nil, at: nil, options: nil)
-        
+
         let context = NSManagedObjectContext(concurrencyType: .mainQueueConcurrencyType)
         context.persistentStoreCoordinator = coordinator
-        
         return context
     }
     
