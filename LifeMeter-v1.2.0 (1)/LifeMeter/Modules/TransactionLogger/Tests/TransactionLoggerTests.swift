@@ -26,12 +26,12 @@ final class TransactionLoggerTests: XCTestCase {
         
         // Setup test wage in Keychain
         let testWage = Wage(amount: 30.0, currency: "EUR", period: .hourly)
-        KeychainManager.shared.saveWage(testWage)
+        try KeychainManager.shared.saveWage(testWage)
     }
     
     override func tearDownWithError() throws {
         // Clean up Keychain
-        KeychainManager.shared.deleteWage()
+        try KeychainManager.shared.deleteWage()
         
         transactionLogger = nil
         mockHistoryStore = nil
