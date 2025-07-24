@@ -679,64 +679,7 @@ final class LifeMeterPerformanceTests: XCTestCase {
         }
         
         // Ensure TimeBudgetEntity is available for tests
-        if model.entitiesByName["TimeBudgetEntity"] == nil {
-            let entity = NSEntityDescription()
-            entity.name = "TimeBudgetEntity"
-            entity.managedObjectClassName = "TimeBudgetEntity"
-            
-            let id = NSAttributeDescription()
-            id.name = "id"
-            id.attributeType = .UUIDAttributeType
-            id.isOptional = false
-            
-            let name = NSAttributeDescription()
-            name.name = "name"
-            name.attributeType = .stringAttributeType
-            name.isOptional = false
-            
-            let totalWorkMinutes = NSAttributeDescription()
-            totalWorkMinutes.name = "totalWorkMinutes"
-            totalWorkMinutes.attributeType = .doubleAttributeType
-            totalWorkMinutes.defaultValue = 0.0
-            
-            let period = NSAttributeDescription()
-            period.name = "period"
-            period.attributeType = .stringAttributeType
-            period.isOptional = false
-            
-            let categoriesData = NSAttributeDescription()
-            categoriesData.name = "categoriesData"
-            categoriesData.attributeType = .binaryDataAttributeType
-            categoriesData.isOptional = false
-            
-            let spendingData = NSAttributeDescription()
-            spendingData.name = "spendingData"
-            spendingData.attributeType = .binaryDataAttributeType
-            spendingData.isOptional = false
-            
-            let createdAt = NSAttributeDescription()
-            createdAt.name = "createdAt"
-            createdAt.attributeType = .dateAttributeType
-            createdAt.isOptional = false
-            
-            let periodStartDate = NSAttributeDescription()
-            periodStartDate.name = "periodStartDate"
-            periodStartDate.attributeType = .dateAttributeType
-            periodStartDate.isOptional = false
-            
-            entity.properties = [
-                id,
-                name,
-                totalWorkMinutes,
-                period,
-                categoriesData,
-                spendingData,
-                createdAt,
-                periodStartDate
-            ]
-            
-            model.entities.append(entity)
-        }
+        addTimeBudgetEntity(to: model)
         
         let coordinator = NSPersistentStoreCoordinator(managedObjectModel: model)
         try! coordinator.addPersistentStore(ofType: NSInMemoryStoreType, configurationName: nil, at: nil, options: nil)
