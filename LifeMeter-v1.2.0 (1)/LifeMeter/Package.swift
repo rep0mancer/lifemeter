@@ -36,7 +36,7 @@ let package = Package(
             dependencies: ["CalcCore"],
             path: "Modules/CalcCore/Tests"
         ),
-        
+
         // MARK: - Data Layer
         .target(
             name: "HistoryStore",
@@ -48,7 +48,7 @@ let package = Package(
             dependencies: ["HistoryStore"],
             path: "Modules/HistoryStore/Tests"
         ),
-        
+
         // MARK: - UI Modules
         .target(
             name: "WageOnboarding",
@@ -60,7 +60,7 @@ let package = Package(
             dependencies: ["WageOnboarding"],
             path: "Modules/WageOnboarding/Tests"
         ),
-        
+
         .target(
             name: "PriceCapture",
             dependencies: ["CalcCore"],
@@ -71,7 +71,7 @@ let package = Package(
             dependencies: ["PriceCapture"],
             path: "Modules/PriceCapture/Tests"
         ),
-        
+
         .target(
             name: "CatRenderer",
             dependencies: ["CalcCore"],
@@ -96,7 +96,7 @@ let package = Package(
 
         .target(
             name: "TimeBudget",
-            dependencies: ["AppShell"],
+            dependencies: ["AppShell", "HistoryStore"],
             path: "Modules/TimeBudget/Sources"
         ),
         .testTarget(
@@ -125,7 +125,7 @@ let package = Package(
             dependencies: ["TransactionLogger", "CalcCore", "HistoryStore"],
             path: "Modules/TransactionLogger/Tests"
         ),
-        
+
         // MARK: - Widget Extension
         .target(
             name: "LifeWidget",
@@ -137,13 +137,13 @@ let package = Package(
             dependencies: ["LifeWidget"],
             path: "Modules/LifeWidget/Tests"
         ),
-        
+
         // MARK: - App Shell
         .target(
             name: "AppShell",
             dependencies: [
                 "WageOnboarding",
-                "PriceCapture", 
+                "PriceCapture",
                 "CalcCore",
                 "CatRenderer",
                 "HistoryStore"
@@ -157,4 +157,3 @@ let package = Package(
         )
     ]
 )
-
