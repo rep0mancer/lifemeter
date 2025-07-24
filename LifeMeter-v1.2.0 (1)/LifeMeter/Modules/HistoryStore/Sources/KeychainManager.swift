@@ -2,6 +2,15 @@ import Foundation
 import Security
 
 // MARK: - Keychain Manager
+///
+/// This `KeychainManager` provides a simple API for storing and retrieving a user's wage and
+/// currency preferences.  It wraps the system Keychain APIs for persistence and
+/// interoperability with existing data stored in earlier versions of the app.
+///
+/// Additionally, it exposes methods for saving and deleting full ``Wage`` values by
+/// delegating to ``HardenedKeychainManager``.  These methods bridge the older
+/// double‑and‑string based storage to the more secure ``WageData`` format used by
+/// integration and transaction logging tests.
 public class KeychainManager {
     public static let shared = KeychainManager()
     
@@ -13,7 +22,11 @@ public class KeychainManager {
     
     // MARK: - Wage Management
     
-    /// Stores the user's hourly wage securely in Keychain
+    /// Stores the user's hourly wage securely in Keychain.
+    ///
+    /// This method persists only the numeric wage amount for backwards
+    /// compatibility.  To save a full ``Wage`` including period, use
+    /// ``saveWage(_:)`` instead.
     /// - Parameter wage: Hourly wage to store
     /// - Returns: Success status
     @discardableResult
@@ -22,7 +35,7 @@ public class KeychainManager {
         return storeData(data, for: wageKey)
     }
     
-    /// Retrieves the user's hourly wage from Keychain
+    /// Retrieves the user's hourly wage from Keychain.
     /// - Returns: Hourly wage or nil if not found
     public func retrieveWage() -> Double? {
         guard let data = retrieveData(for: wageKey),
@@ -33,7 +46,7 @@ public class KeychainManager {
         return wage
     }
     
-    /// Stores the user's preferred currency
+    /// Stores the user's preferred currency.
     /// - Parameter currency: Currency code to store
     /// - Returns: Success status
     @discardableResult
@@ -42,7 +55,7 @@ public class KeychainManager {
         return storeData(data, for: currencyKey)
     }
     
-    /// Retrieves the user's preferred currency
+    /// Retrieves the user's preferred currency.
     /// - Returns: Currency code or system default
     public func retrieveCurrency() -> String {
         guard let data = retrieveData(for: currencyKey),
@@ -52,24 +65,56 @@ public class KeychainManager {
         return currency
     }
     
-    /// Removes wage data from Keychain
+    /// Removes wage data from Keychain.
     /// - Returns: Success status
     @discardableResult
     public func removeWage() -> Bool {
         return removeData(for: wageKey)
     }
     
-    /// Removes currency data from Keychain
+    /// Removes currency data from Keychain.
     /// - Returns: Success status
     @discardableResult
     public func removeCurrency() -> Bool {
         return removeData(for: currencyKey)
     }
     
-    /// Checks if wage is stored
+    /// Checks if wage is stored.
     /// - Returns: True if wage exists in Keychain
     public func hasWage() -> Bool {
         return retrieveWage() != nil
+    }
+    
+    // MARK: - WageData bridging
+    
+    /// Saves a complete ``Wage`` using the hardened keychain.
+    ///
+    /// This convenience method constructs a ``WageData`` from the provided wage
+    /// information and delegates to ``HardenedKeychainManager`` to persist the
+    /// data securely.  It also stores the wage amount and currency in the
+    /// legacy keychain keys to maintain backwards compatibility with parts of
+    /// the app that still rely on the older storage.
+    ///
+    /// - Parameter wage: The `Wage` to save.
+    /// - Throws: Rethrows any error thrown by ``HardenedKeychainManager.saveWage(_:)``.
+    @discardableResult
+    public func saveWage(_ wage: Wage) throws {
+        let wageData = WageData(amount: wage.amount, currency: wage.currency, period: wage.period)
+        try HardenedKeychainManager.shared.saveWage(wageData)
+        // Also store legacy values for backwards compatibility
+        _ = storeWage(wage.amount)
+        _ = storeCurrency(wage.currency)
+    }
+    
+    /// Deletes wage information from both the hardened keychain and the legacy keys.
+    ///
+    /// - Throws: Rethrows any error thrown by ``HardenedKeychainManager.deleteWage()``.
+    @discardableResult
+    public func deleteWage() throws {
+        try HardenedKeychainManager.shared.deleteWage()
+        // Remove legacy keys
+        _ = removeWage()
+        _ = removeCurrency()
     }
     
     // MARK: - Private Keychain Operations
@@ -138,4 +183,3 @@ public enum KeychainError: Error, LocalizedError {
         }
     }
 }
-
