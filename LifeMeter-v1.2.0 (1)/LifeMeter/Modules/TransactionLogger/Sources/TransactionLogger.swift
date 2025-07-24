@@ -25,7 +25,7 @@ public class TransactionLogger: ObservableObject {
     @MainActor
     public func handle(_ transaction: Transaction) async throws {
         // Get current wage from Keychain
-        guard let wage = KeychainManager.shared.getWage() else {
+        guard let wage = try HardenedKeychainManager.shared.loadWage() else {
             throw TransactionLoggerError.noWageConfigured
         }
         

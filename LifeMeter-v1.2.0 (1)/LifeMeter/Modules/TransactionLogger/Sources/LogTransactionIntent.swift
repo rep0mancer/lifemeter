@@ -1,5 +1,6 @@
 import Foundation
 import AppIntents
+import HistoryStore
 
 // MARK: - Log Transaction Intent
 @available(iOS 17.0, *)
@@ -60,7 +61,7 @@ public struct LogTransactionIntent: AppIntent {
             
             // Return success result with summary
             let formattedPrice = CurrencyUtilities.formatPrice(amount, currency: currency)
-            let wage = KeychainManager.shared.getWage()
+            let wage = try? HardenedKeychainManager.shared.loadWage()
             let minutes = ConversionEngine.convertToWorkTime(price: amount, hourlyWage: wage?.amount ?? 0)
             let formattedTime = ConversionEngine.formatWorkTime(minutes)
             
