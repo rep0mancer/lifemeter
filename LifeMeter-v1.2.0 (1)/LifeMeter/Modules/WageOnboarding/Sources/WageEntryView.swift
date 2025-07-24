@@ -323,7 +323,7 @@ public class WageEntryViewModel: ObservableObject {
                     period: selectedPeriod
                 )
                 
-                try await KeychainManager.shared.saveWage(wage)
+                try KeychainManager.shared.saveWage(wage)
                 
                 await MainActor.run {
                     isLoading = false
