@@ -249,8 +249,10 @@ public class WageEntryViewModel: ObservableObject {
     }
     
     var isConvertButtonEnabled: Bool {
-        case .valid = wageValidationState
-        return !isLoading
+        if case .valid = wageValidationState {
+            return !isLoading
+        }
+        return false
     }
     
     // MARK: - Initialization
