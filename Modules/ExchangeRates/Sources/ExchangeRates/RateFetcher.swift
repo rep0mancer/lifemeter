@@ -1,12 +1,16 @@
 // swiftlint:disable force_unwrapping
 import Foundation
 
-public actor RateFetcher {
+public actor RateFetcher: RateFetching {
     private let session: URLSession = .shared
 
-    func fetchLatest(base: CurrencyCode) async throws -> RatesResponse {
-        let url = URL(string: "https://api.exchangerate.host/latest?base=\(base)")!
-        let (data, _) = try await session.data(from: url)
+    public init() {}
+
+    public func fetchLatest(base: CurrencyCode) async throws -> RatesResponse {
+guard let url = URL(string: "https://api.exchangerate.host/latest?base=\(base)") else {
+    throw URLError(.badURL)
+}
+let (data, _) = try await session.data(from: url)
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .formatted(Self.dateFormatter)
         return try decoder.decode(RatesResponse.self, from: data)
@@ -19,3 +23,4 @@ public actor RateFetcher {
         return formatter
     }()
 }
+
