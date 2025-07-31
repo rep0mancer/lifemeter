@@ -80,7 +80,7 @@ public class DataController: ObservableObject {
                 try context.save()
             } catch {
                 #if DEBUG
-                    os_log(.error, "Failed to save context: %{public}@", error.localizedDescription)
+                    os_log(.error, "Failed to save context: %{public}@", String(describing: error))
                 #endif
             }
         }
