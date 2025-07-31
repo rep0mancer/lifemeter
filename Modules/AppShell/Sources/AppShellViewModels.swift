@@ -291,8 +291,8 @@ public class HistoryViewModel: ObservableObject {
             #if DEBUG
                 os_log(
                     .error,
-                    "Failed to clear calculations: %{private}@",
                     log: .appShell,
+                    "Failed to clear calculations: %{private}@",
                     String(describing: error)
                 )
             #endif
