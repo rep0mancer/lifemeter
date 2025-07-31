@@ -1,6 +1,6 @@
 import Foundation
 
-public struct PersistenceService {
+public enum PersistenceService {
     private static let key = "userProfile"
 
     public static func save(_ profile: UserProfile) {
