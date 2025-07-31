@@ -192,8 +192,8 @@ public class SettingsViewModel: ObservableObject {
             #if DEBUG
                 os_log(
                     .error,
-                    "Failed to load settings: %{private}@",
                     log: .appShell,
+                    "Failed to load settings: %{private}@",
                     String(describing: error)
                 )
             #endif
