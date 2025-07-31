@@ -45,7 +45,8 @@ public struct CatColourIntent: AppIntent {
     }
 
     public func perform() async throws -> some IntentResult {
-        UserDefaults.standard.set(colour.rawValue, forKey: "CatColour")
+        // Make sure to replace "YOUR_APP_GROUP_ID" with your actual App Group identifier.
+        UserDefaults(suiteName: "YOUR_APP_GROUP_ID")?.set(colour.rawValue, forKey: "CatColour")
         return .result()
     }
 }
