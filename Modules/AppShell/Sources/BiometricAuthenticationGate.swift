@@ -161,8 +161,8 @@ public class BiometricAuthenticationGate: ObservableObject {
             if let details {
                 os_log(
                     .debug,
-                    "\u{1F510} Auth Event [%{private}@]: %{public}@ - %{private}@",
                     log: .appShell,
+                    "\u{1F510} Auth Event [%{private}@]: %{public}@ - %{private}@",
                     timestamp,
                     event.rawValue,
                     details
@@ -170,8 +170,8 @@ public class BiometricAuthenticationGate: ObservableObject {
             } else {
                 os_log(
                     .debug,
-                    "\u{1F510} Auth Event [%{private}@]: %{public}@",
                     log: .appShell,
+                    "\u{1F510} Auth Event [%{private}@]: %{public}@",
                     timestamp,
                     event.rawValue
                 )
