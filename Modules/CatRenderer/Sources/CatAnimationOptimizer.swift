@@ -87,7 +87,7 @@ public class CatAnimationOptimizer {
 
     // MARK: - Private Methods
 
-    private func cacheAtlas() {
+    private func populateTextureCache() {
         // Initialize cache in background to avoid blocking main thread
         SKTextureAtlas.preloadTextureAtlases([atlas]) { [weak self] in
             guard let self = self else { return }
