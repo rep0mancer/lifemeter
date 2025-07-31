@@ -24,7 +24,7 @@ public class CatAnimationOptimizer {
 
     private init() {
         cache.totalCostLimit = 20 * 1024 * 1024 // 20 MB
-        initializeCache()
+        cacheAtlas()
     }
 
     // MARK: - Public Methods
@@ -87,7 +87,7 @@ public class CatAnimationOptimizer {
 
     // MARK: - Private Methods
 
-    private func initializeCache() {
+    private func cacheAtlas() {
         // Initialize cache in background to avoid blocking main thread
         SKTextureAtlas.preloadTextureAtlases([atlas]) { [weak self] in
             guard let self = self else { return }
