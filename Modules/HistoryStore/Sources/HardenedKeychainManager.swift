@@ -251,7 +251,7 @@ public class HardenedKeychainManager {
 
         // Try to add a test item
         var testQueryWithData = testQuery
-        testQueryWithData[kSecValueData as String] = "test".data(using: .utf8)!
+        testQueryWithData[kSecValueData as String] = "test".data(using: .utf8) ?? Data()
         testQueryWithData[kSecAttrAccessible as String] = kSecAttrAccessibleWhenUnlockedThisDeviceOnly
 
         let addStatus = SecItemAdd(testQueryWithData as CFDictionary, nil)
