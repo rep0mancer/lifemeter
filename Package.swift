@@ -43,6 +43,11 @@ let package = Package(
             name: "LifeCore",
             path: "Modules/LifeCore/Sources"
         ),
+        .testTarget(
+            name: "LifeCoreTests",
+            dependencies: ["LifeCore"],
+            path: "Modules/LifeCore/Tests"
+        ),
 
         // MARK: - Data Layer
 
