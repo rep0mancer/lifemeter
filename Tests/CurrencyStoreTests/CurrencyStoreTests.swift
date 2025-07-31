@@ -24,7 +24,7 @@ final class CurrencyStoreTests: XCTestCase {
         }
 
         await store.set("GBP")
-        await waitForExpectations(timeout: 1)
+await fulfillment(of: [exp], timeout: 1)
         _ = cancellable
     }
 }
