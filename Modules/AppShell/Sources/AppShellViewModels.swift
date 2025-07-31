@@ -216,8 +216,8 @@ public class SettingsViewModel: ObservableObject {
             #if DEBUG
                 os_log(
                     .error,
-                    "Failed to update settings: %{private}@",
                     log: .appShell,
+                    "Failed to update settings: %{private}@",
                     String(describing: error)
                 )
             #endif
