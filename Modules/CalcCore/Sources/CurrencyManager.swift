@@ -1,13 +1,16 @@
 import Foundation
+import Combine
+
+public typealias CurrencyCode = String
 
 // MARK: - Currency Manager
-public class CurrencyManager: ObservableObject {
+public actor CurrencyManager {
     
     // MARK: - Singleton
     public static let shared = CurrencyManager()
     
     // MARK: - Properties
-    @Published public var selectedCurrency: String = "EUR"
+    @Published public var selectedCurrency: CurrencyCode = "EUR"
     
     private let supportedCurrencyCodes: Set<String> = [
         "EUR", "USD", "GBP", "JPY", "CHF", "CAD", "AUD"
@@ -21,21 +24,14 @@ public class CurrencyManager: ObservableObject {
     // MARK: - Public Methods
     
     /// Validate and set currency code
-    public func setCurrency(_ currencyCode: String?) throws {
-        guard let code = currencyCode, !code.isEmpty else {
-            throw CurrencyError.invalidCurrencyCode("Currency code cannot be nil or empty")
-        }
-        
-        guard supportedCurrencyCodes.contains(code) else {
-            throw CurrencyError.unsupportedCurrency("Unsupported currency: \(code). Please choose a different code.")
-        }
-        
-        selectedCurrency = code
+    public func setCurrency(_ currencyCode: CurrencyCode) {
+        guard supportedCurrencyCodes.contains(currencyCode) else { return }
+        selectedCurrency = currencyCode
         saveSelectedCurrency()
     }
     
     /// Get currency symbol for code
-    public func symbol(for currencyCode: String) -> String {
+    nonisolated public func symbol(for currencyCode: String) -> String {
         guard supportedCurrencyCodes.contains(currencyCode) else {
             return currencyCode // Fallback to code if unsupported
         }
@@ -44,18 +40,18 @@ public class CurrencyManager: ObservableObject {
     }
     
     /// Check if currency code is supported
-    public func isSupported(_ currencyCode: String?) -> Bool {
+    nonisolated public func isSupported(_ currencyCode: String?) -> Bool {
         guard let code = currencyCode else { return false }
         return supportedCurrencyCodes.contains(code)
     }
     
     /// Get all supported currency codes
-    public var supportedCurrencies: [String] {
+    nonisolated public var supportedCurrencies: [String] {
         return Array(supportedCurrencyCodes).sorted()
     }
     
     /// Validate currency code before conversion
-    public func validateCurrencyForConversion(_ currencyCode: String?) throws {
+    nonisolated public func validateCurrencyForConversion(_ currencyCode: String?) throws {
         guard let code = currencyCode else {
             throw CurrencyError.invalidCurrencyCode("Currency code is required for conversion")
         }
@@ -66,7 +62,7 @@ public class CurrencyManager: ObservableObject {
     }
     
     /// Get currency from user's locale
-    public func getLocaleCurrency() -> String? {
+    nonisolated public func getLocaleCurrency() -> String? {
         guard let localeCode = Locale.current.currencyCode,
               supportedCurrencyCodes.contains(localeCode) else {
             return nil

@@ -4,9 +4,10 @@ import VisionKit
 // MARK: - Enhanced OCR View
 @available(iOS 15.0, *)
 public struct EnhancedOCRView: View {
-    
+
     // MARK: - Properties
     @StateObject private var viewModel = OCRViewModel()
+    @EnvironmentObject private var currency: CurrencyStore
     @Environment(\.dismiss) private var dismiss
     
     // MARK: - Body
@@ -158,7 +159,7 @@ public class OCRViewModel: ObservableObject, OCRScannerDelegate {
             // Add to recent scans
             let scan = ScannedPrice(
                 price: price,
-                currency: CurrencyManager.shared.selectedCurrency,
+                currency: currency.selected,
                 confidence: confidence,
                 timestamp: Date()
             )
@@ -403,6 +404,7 @@ extension Notification.Name {
 struct EnhancedOCRView_Previews: PreviewProvider {
     static var previews: some View {
         EnhancedOCRView()
+            .environmentObject(CurrencyStore())
     }
 }
 
