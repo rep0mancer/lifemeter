@@ -16,7 +16,7 @@ final class RateManagerTests: XCTestCase {
     actor FakeCache: RateCaching {
         var stored: RatesResponse?
         init(initial: RatesResponse? = nil) { stored = initial }
-        func load() -> RatesResponse? { stored }
+func load() async -> RatesResponse? { stored }
         func save(_ response: RatesResponse) async throws { stored = response }
     }
 
