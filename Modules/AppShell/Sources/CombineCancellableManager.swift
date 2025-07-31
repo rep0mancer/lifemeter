@@ -103,8 +103,8 @@ open class BaseViewModel: ObservableObject, CancellableStorage {
         #if DEBUG
             os_log(
                 .debug,
-                "\u{1F5D1} %{public}@ deinitialized, cancelled %{public}d subscriptions",
                 log: .appShell,
+                "\u{1F5D1} %{public}@ deinitialized, cancelled %{public}d subscriptions",
                 String(describing: type(of: self)),
                 cancellableManager.activeCancellablesCount
             )
