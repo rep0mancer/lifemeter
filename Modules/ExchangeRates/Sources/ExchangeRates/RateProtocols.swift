@@ -5,7 +5,7 @@ public protocol RateFetching: Sendable {
 }
 
 public protocol RateCaching: Sendable {
-    func load() -> RatesResponse?
+func load() async -> RatesResponse?
     func save(_ response: RatesResponse) async throws
 }
 
