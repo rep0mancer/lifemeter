@@ -12,6 +12,7 @@ let package = Package(
         .library(name: "WageOnboarding", targets: ["WageOnboarding"]),
         .library(name: "PriceCapture", targets: ["PriceCapture"]),
         .library(name: "CalcCore", targets: ["CalcCore"]),
+        .library(name: "LifeCore", targets: ["LifeCore"]),
         .library(name: "CatRenderer", targets: ["CatRenderer"]),
         .library(name: "HistoryStore", targets: ["HistoryStore"]),
         .library(name: "LifeWidget", targets: ["LifeWidget"]),
@@ -36,6 +37,11 @@ let package = Package(
             name: "CalcCoreTests",
             dependencies: ["CalcCore"],
             path: "Modules/CalcCore/Tests"
+        ),
+
+        .target(
+            name: "LifeCore",
+            path: "Modules/LifeCore/Sources"
         ),
 
         // MARK: - Data Layer
