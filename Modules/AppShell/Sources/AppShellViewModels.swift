@@ -254,8 +254,8 @@ public class HistoryViewModel: ObservableObject {
             #if DEBUG
                 os_log(
                     .error,
-                    "Failed to load calculations: %{private}@",
                     log: .appShell,
+                    "Failed to load calculations: %{private}@",
                     String(describing: error)
                 )
             #endif
