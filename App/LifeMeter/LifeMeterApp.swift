@@ -1,5 +1,6 @@
 import AppShell
 import HistoryStore
+import ExchangeRates
 import SwiftUI
 
 // MARK: - Main App
@@ -40,6 +41,9 @@ struct LifeMeterApp: App {
 
         // Perform any necessary migrations
         performDataMigrations()
+
+        // Register background tasks
+        BGTaskScheduler.registerLifeMeterTasks(currency: currencyStore)
     }
 
     private func configureAppearance() {
