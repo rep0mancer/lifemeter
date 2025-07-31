@@ -4,9 +4,9 @@ import Foundation
 @MainActor
 public final class CurrencyStore: ObservableObject {
     @Published public private(set) var selected: CurrencyCode = "USD"
-    private let manager: CurrencyManager
+    private let manager: any CurrencyManaging
 
-    public init(manager: CurrencyManager = .shared) {
+    public init(manager: any CurrencyManaging = CurrencyManager.shared) {
         self.manager = manager
         Task { await observe() }
     }
@@ -16,8 +16,9 @@ public final class CurrencyStore: ObservableObject {
     }
 
     private func observe() async {
-        for await value in await manager.$selectedCurrency.values {
+        for await value in await manager.selectedCurrencyPublisher.values {
             selected = value
         }
     }
 }
+

@@ -96,7 +96,12 @@ let package = Package(
         .testTarget(
             name: "ExchangeRatesTests",
             dependencies: ["ExchangeRates"],
-            path: "Modules/ExchangeRates/Tests"
+            path: "Tests/ExchangeRatesTests"
+        ),
+        .testTarget(
+            name: "CurrencyStoreTests",
+            dependencies: ["CalcCore"],
+            path: "Tests/CurrencyStoreTests"
         ),
 
         .target(
@@ -164,3 +169,4 @@ let package = Package(
         ),
     ]
 )
+

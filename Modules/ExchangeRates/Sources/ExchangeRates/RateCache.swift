@@ -1,10 +1,12 @@
 import Foundation
 
-public actor RateCache {
+public actor RateCache: RateCaching {
     private var payload: RatesResponse?
     private let url: URL = FileManager.default
         .urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
         .appendingPathComponent("ExchangeRates/rates.json")
+
+    public init() {}
 
     public func load() -> RatesResponse? {
         payload ?? readFromDisk()
@@ -27,3 +29,4 @@ public actor RateCache {
         try data.write(to: url)
     }
 }
+
