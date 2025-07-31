@@ -113,7 +113,11 @@ public class TransactionLogger: ObservableObject {
             try await notificationCenter.add(request)
         } catch {
             #if DEBUG
-                os_log(.error, "Failed to post notification: %{public}@", String(describing: error))
+                os_log(
+                    .error,
+                    "Failed to post notification: %{private}@",
+                    String(describing: error)
+                )
             #endif
         }
     }
@@ -152,7 +156,11 @@ public class TransactionLogger: ObservableObject {
             try await notificationCenter.add(request)
         } catch {
             #if DEBUG
-                os_log(.error, "Failed to undo transaction: %{public}@", String(describing: error))
+                os_log(
+                    .error,
+                    "Failed to undo transaction: %{private}@",
+                    String(describing: error)
+                )
             #endif
         }
     }

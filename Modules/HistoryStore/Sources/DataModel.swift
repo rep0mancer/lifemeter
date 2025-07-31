@@ -50,7 +50,11 @@ public class DataController: ObservableObject {
 
         if let error = loadError {
             moveCorruptedStore(originalURL: description.url)
-            os_log(.fault, "Failed to load persistent store: %{public}@", error.localizedDescription)
+            os_log(
+                .fault,
+                "Failed to load persistent store: %{private}@",
+                error.localizedDescription
+            )
             throw error
         }
     }
@@ -68,7 +72,11 @@ public class DataController: ObservableObject {
             }
             try fileManager.moveItem(at: originalURL, to: destination)
         } catch {
-            os_log(.fault, "Failed to move corrupted store: %{public}@", error.localizedDescription)
+            os_log(
+                .fault,
+                "Failed to move corrupted store: %{private}@",
+                error.localizedDescription
+            )
         }
     }
 
@@ -80,7 +88,11 @@ public class DataController: ObservableObject {
                 try context.save()
             } catch {
                 #if DEBUG
-                    os_log(.error, "Failed to save context: %{public}@", String(describing: error))
+                    os_log(
+                        .error,
+                        "Failed to save context: %{private}@",
+                        String(describing: error)
+                    )
                 #endif
             }
         }

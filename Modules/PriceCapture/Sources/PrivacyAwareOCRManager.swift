@@ -357,8 +357,13 @@ public class PrivacyAwareOCRManager: NSObject {
         let timestamp = ISO8601DateFormatter().string(from: Date())
 
         #if DEBUG
-            os_log(.debug, "\u{1F512} Privacy Event [%{public}@]: %{public}@ - %{public}@",
-                   timestamp, event.rawValue, details)
+            os_log(
+                .debug,
+                "\u{1F512} Privacy Event [%{private}@]: %{public}@ - %{private}@",
+                timestamp,
+                event.rawValue,
+                details
+            )
         #endif
 
         // In production, log to privacy audit trail
@@ -471,8 +476,12 @@ public class PrivacySettings {
 
     private func logPrivacyEvent(_ event: PrivacyEvent, details: String) {
         #if DEBUG
-            os_log(.debug, "\u{1F512} Privacy Setting: %{public}@ - %{public}@",
-                   event.rawValue, details)
+            os_log(
+                .debug,
+                "\u{1F512} Privacy Setting: %{public}@ - %{private}@",
+                event.rawValue,
+                details
+            )
         #endif
     }
 }

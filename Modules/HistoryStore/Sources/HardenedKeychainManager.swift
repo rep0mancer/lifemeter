@@ -322,8 +322,13 @@ public class HardenedKeychainManager {
         let timestamp = ISO8601DateFormatter().string(from: Date())
 
         #if DEBUG
-            os_log(.debug, "\u{1F512} Security Event [%{public}@]: %{public}@ - %{public}@",
-                   timestamp, event.rawValue, details)
+            os_log(
+                .debug,
+                "\u{1F512} Security Event [%{private}@]: %{public}@ - %{private}@",
+                timestamp,
+                event.rawValue,
+                details
+            )
         #endif
 
         // In production, you might want to log to a secure audit trail

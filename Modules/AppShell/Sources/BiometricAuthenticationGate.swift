@@ -156,11 +156,26 @@ public class BiometricAuthenticationGate: ObservableObject {
 
     private func logAuthenticationEvent(_ event: AuthenticationEvent, details: String? = nil) {
         let timestamp = ISO8601DateFormatter().string(from: Date())
-        let message = event.rawValue + (details.map { " - \($0)" } ?? "")
 
         #if DEBUG
-            os_log(.debug, "\u{1F510} Auth Event [%{public}@]: %{public}@",
-                   timestamp, message)
+            if let details {
+                os_log(
+                    .debug,
+                    "\u{1F510} Auth Event [%{private}@]: %{public}@ - %{private}@",
+                    log: .appShell,
+                    timestamp,
+                    event.rawValue,
+                    details
+                )
+            } else {
+                os_log(
+                    .debug,
+                    "\u{1F510} Auth Event [%{private}@]: %{public}@",
+                    log: .appShell,
+                    timestamp,
+                    event.rawValue
+                )
+            }
         #endif
 
         // In production, log to security audit trail
