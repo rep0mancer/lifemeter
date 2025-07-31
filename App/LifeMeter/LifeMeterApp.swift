@@ -6,15 +6,17 @@ import HistoryStore
 @available(iOS 15.0, *)
 @main
 struct LifeMeterApp: App {
-    
+
     // MARK: - Properties
     @StateObject private var dataController = DataController.shared
+    @StateObject private var currencyStore = CurrencyStore()
     
     // MARK: - App Body
     var body: some Scene {
         WindowGroup {
             MainAppView()
                 .environment(\.managedObjectContext, dataController.container.viewContext)
+                .environmentObject(currencyStore)
                 .onAppear {
                     setupApp()
                 }
