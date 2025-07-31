@@ -8,7 +8,7 @@ public actor RateCache: RateCaching {
 
     public init() {}
 
-    public func load() -> RatesResponse? {
+public func load() async -> RatesResponse? {
         payload ?? readFromDisk()
     }
 
