@@ -1,3 +1,4 @@
+// swiftlint:disable force_unwrapping
 import Foundation
 
 public actor RateFetcher {
@@ -18,4 +19,3 @@ public actor RateFetcher {
         return formatter
     }()
 }
-

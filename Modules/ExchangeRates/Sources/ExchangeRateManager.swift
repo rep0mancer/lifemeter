@@ -15,4 +15,3 @@ public actor ExchangeRateManager {
         return fresh
     }
 }
-

@@ -47,13 +47,14 @@ jobs:
       run: |
         swift package resolve
         
-    - name: SwiftLint
-      run: |
-        if which swiftlint >/dev/null; then
-          swiftlint --strict
-        else
-          echo "SwiftLint not installed, skipping..."
-        fi
+    - name: Install linters
+      run: brew install swiftlint swiftformat
+
+    - name: Lint
+      run: swiftlint --strict
+
+    - name: Format (fail on diff)
+      run: swiftformat . --lint
         
     - name: Build for Testing
       run: |

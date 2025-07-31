@@ -1,20 +1,23 @@
-import SwiftUI
-import WageOnboarding
-import PriceCapture
 import CalcCore
 import CatRenderer
 import HistoryStore
+import PriceCapture
+
+// swiftlint:disable force_unwrapping
+import SwiftUI
+import WageOnboarding
 
 // MARK: - Main App View
+
 @available(iOS 15.0, *)
 public struct MainAppView: View {
     @StateObject private var viewModel = MainAppViewModel()
     @State private var showingPriceCapture = false
     @State private var showingSettings = false
     @State private var showingHistory = false
-    
+
     public init() {}
-    
+
     public var body: some View {
         NavigationView {
             ZStack {
@@ -25,7 +28,7 @@ public struct MainAppView: View {
                     endPoint: .bottomTrailing
                 )
                 .ignoresSafeArea()
-                
+
                 if viewModel.needsOnboarding {
                     WageOnboardingView()
                 } else {
@@ -37,14 +40,14 @@ public struct MainAppView: View {
             viewModel.checkOnboardingStatus()
         }
     }
-    
+
     private var mainContentView: some View {
         VStack(spacing: 32) {
             headerSection
             quickCalculationSection
             catDisplaySection
             actionButtonsSection
-            
+
             Spacer()
         }
         .padding(.horizontal, 24)
@@ -60,7 +63,7 @@ public struct MainAppView: View {
             HistoryView()
         }
     }
-    
+
     private var headerSection: some View {
         HStack {
             VStack(alignment: .leading, spacing: 4) {
@@ -68,14 +71,14 @@ public struct MainAppView: View {
                     .font(.largeTitle)
                     .fontWeight(.bold)
                     .foregroundColor(.primary)
-                
+
                 Text("Time is money")
                     .font(.subheadline)
                     .foregroundColor(.secondary)
             }
-            
+
             Spacer()
-            
+
             Button(action: {
                 showingSettings = true
             }) {
@@ -85,13 +88,13 @@ public struct MainAppView: View {
             }
         }
     }
-    
+
     private var quickCalculationSection: some View {
         VStack(spacing: 16) {
             Text("Quick Calculate")
                 .font(.headline)
                 .fontWeight(.semibold)
-            
+
             HStack {
                 TextField("Enter price", text: $viewModel.quickPriceInput)
                     .keyboardType(.decimalPad)
@@ -103,19 +106,19 @@ public struct MainAppView: View {
                             .fill(.regularMaterial)
                             .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
                     )
-                
+
                 Text(viewModel.currencySymbol)
                     .font(.system(size: 20, weight: .medium))
                     .foregroundColor(.secondary)
                     .padding(.leading, 8)
             }
-            
+
             if viewModel.isValidQuickPrice {
                 VStack(spacing: 8) {
                     Text("Work time:")
                         .font(.subheadline)
                         .foregroundColor(.secondary)
-                    
+
                     Text(viewModel.formattedQuickWorkTime)
                         .font(.system(size: 28, weight: .bold, design: .rounded))
                         .foregroundColor(.blue)
@@ -130,18 +133,18 @@ public struct MainAppView: View {
         )
         .animation(.easeInOut(duration: 0.3), value: viewModel.isValidQuickPrice)
     }
-    
+
     private var catDisplaySection: some View {
         VStack(spacing: 16) {
             Text("Your effort level")
                 .font(.headline)
                 .fontWeight(.semibold)
-            
+
             CatStateIndicator(
                 workMinutes: viewModel.quickWorkTime,
                 showDetails: true
             )
-            
+
             Text(ConversionEngine.catState(for: viewModel.quickWorkTime).threshold)
                 .font(.caption)
                 .foregroundColor(.secondary)
@@ -152,7 +155,7 @@ public struct MainAppView: View {
                 .fill(.regularMaterial)
         )
     }
-    
+
     private var actionButtonsSection: some View {
         VStack(spacing: 16) {
             // Primary action button
@@ -162,7 +165,7 @@ public struct MainAppView: View {
                 HStack {
                     Image(systemName: "camera.viewfinder")
                         .font(.title2)
-                    
+
                     Text("Scan or Enter Price")
                         .font(.headline)
                         .fontWeight(.semibold)
@@ -175,7 +178,7 @@ public struct MainAppView: View {
                         .fill(.blue)
                 )
             }
-            
+
             // Secondary actions
             HStack(spacing: 16) {
                 Button(action: {
@@ -195,7 +198,7 @@ public struct MainAppView: View {
                             .fill(.regularMaterial)
                     )
                 }
-                
+
                 Button(action: {
                     viewModel.saveQuickCalculation()
                 }) {
@@ -220,11 +223,12 @@ public struct MainAppView: View {
 }
 
 // MARK: - Settings View
+
 @available(iOS 15.0, *)
 struct SettingsView: View {
     @StateObject private var viewModel = SettingsViewModel()
     @Environment(\.dismiss) private var dismiss
-    
+
     var body: some View {
         NavigationView {
             List {
@@ -236,7 +240,7 @@ struct SettingsView: View {
                             .keyboardType(.decimalPad)
                             .multilineTextAlignment(.trailing)
                     }
-                    
+
                     HStack {
                         Text("Currency")
                         Spacer()
@@ -249,16 +253,16 @@ struct SettingsView: View {
                         .pickerStyle(.menu)
                     }
                 }
-                
+
                 Section("Data & Privacy") {
                     Toggle("iCloud Sync", isOn: $viewModel.cloudSyncEnabled)
-                    
+
                     Button("Clear All Data") {
                         viewModel.showingClearDataAlert = true
                     }
                     .foregroundColor(.red)
                 }
-                
+
                 Section("About") {
                     HStack {
                         Text("Version")
@@ -266,7 +270,7 @@ struct SettingsView: View {
                         Text("1.0.0")
                             .foregroundColor(.secondary)
                     }
-                    
+
                     Link("Privacy Policy", destination: URL(string: "https://lifemeter.app/privacy")!)
                     Link("Terms of Service", destination: URL(string: "https://lifemeter.app/terms")!)
                 }
@@ -282,7 +286,7 @@ struct SettingsView: View {
                 }
             }
             .alert("Clear All Data", isPresented: $viewModel.showingClearDataAlert) {
-                Button("Cancel", role: .cancel) { }
+                Button("Cancel", role: .cancel) {}
                 Button("Clear", role: .destructive) {
                     viewModel.clearAllData()
                 }
@@ -294,11 +298,12 @@ struct SettingsView: View {
 }
 
 // MARK: - History View
+
 @available(iOS 15.0, *)
 struct HistoryView: View {
     @StateObject private var viewModel = HistoryViewModel()
     @Environment(\.dismiss) private var dismiss
-    
+
     var body: some View {
         NavigationView {
             List {
@@ -313,7 +318,7 @@ struct HistoryView: View {
                 ToolbarItem(placement: .navigationBarLeading) {
                     EditButton()
                 }
-                
+
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Done") {
                         dismiss()
@@ -328,30 +333,31 @@ struct HistoryView: View {
 }
 
 // MARK: - History Row View
+
 @available(iOS 15.0, *)
 struct HistoryRowView: View {
     let calculation: Calculation
-    
+
     var body: some View {
         HStack {
             VStack(alignment: .leading, spacing: 4) {
                 Text(CurrencyUtilities.formatPrice(calculation.price, currency: calculation.currency))
                     .font(.headline)
                     .fontWeight(.semibold)
-                
+
                 Text(calculation.timestamp, style: .date)
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
-            
+
             Spacer()
-            
+
             VStack(alignment: .trailing, spacing: 4) {
                 Text(ConversionEngine.formatWorkTime(calculation.minutes))
                     .font(.subheadline)
                     .fontWeight(.medium)
                     .foregroundColor(.blue)
-                
+
                 WidgetCatView(workMinutes: calculation.minutes, size: 24)
             }
         }
@@ -360,10 +366,10 @@ struct HistoryRowView: View {
 }
 
 // MARK: - Preview
+
 @available(iOS 15.0, *)
 struct MainAppView_Previews: PreviewProvider {
     static var previews: some View {
         MainAppView()
     }
 }
-

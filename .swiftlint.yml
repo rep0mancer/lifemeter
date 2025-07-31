@@ -1,0 +1,8 @@
+only_rules:
+  - identifier_name
+  - force_unwrapping
+  - cyclomatic_complexity
+
+cyclomatic_complexity:
+  warning: 12
+  error: 12

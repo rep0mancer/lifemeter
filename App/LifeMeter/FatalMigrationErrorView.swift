@@ -28,4 +28,3 @@ struct FatalMigrationErrorView: View {
         .padding()
     }
 }
-

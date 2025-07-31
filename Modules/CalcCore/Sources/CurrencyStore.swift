@@ -1,5 +1,5 @@
-import Foundation
 import Combine
+import Foundation
 
 @MainActor
 public final class CurrencyStore: ObservableObject {
@@ -17,7 +17,7 @@ public final class CurrencyStore: ObservableObject {
 
     private func observe() async {
         for await value in await manager.$selectedCurrency.values {
-            self.selected = value
+            selected = value
         }
     }
 }

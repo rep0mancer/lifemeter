@@ -1,30 +1,35 @@
-import Foundation
-import SwiftUI
 import Combine
 
+// swiftlint:disable force_unwrapping
+import Foundation
+import SwiftUI
+
 // MARK: - Time Budget Planner
+
 @available(iOS 15.0, *)
 public class TimeBudgetPlanner: BaseViewModel {
-    
     // MARK: - Published Properties
+
     @Published public var budgets: [TimeBudget] = []
     @Published public var currentBudget: TimeBudget?
     @Published public var isLoading = false
     @Published public var errorMessage: String?
-    
+
     // MARK: - Properties
+
     private let storage = TimeBudgetStorage.shared
     private let calculator = TimeBudgetCalculator()
-    
+
     // MARK: - Initialization
-    public override init() {
+
+    override public init() {
         super.init()
         loadBudgets()
         setupNotifications()
     }
-    
+
     // MARK: - Public Methods
-    
+
     /// Create a new time budget
     public func createBudget(
         name: String,
@@ -32,91 +37,90 @@ public class TimeBudgetPlanner: BaseViewModel {
         period: BudgetPeriod,
         categories: [BudgetCategory]
     ) throws {
-        
         guard !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             throw TimeBudgetError.invalidName
         }
-        
+
         guard totalWorkMinutes > 0 else {
             throw TimeBudgetError.invalidWorkTime
         }
-        
+
         guard !categories.isEmpty else {
             throw TimeBudgetError.noCategoriesProvided
         }
-        
+
         // Validate categories don't exceed total time
         let totalCategoryMinutes = categories.reduce(0) { $0 + $1.allocatedMinutes }
         guard totalCategoryMinutes <= totalWorkMinutes else {
             throw TimeBudgetError.categoriesExceedTotal
         }
-        
+
         let budget = TimeBudget(
             name: name,
             totalWorkMinutes: totalWorkMinutes,
             period: period,
             categories: categories
         )
-        
+
         budgets.append(budget)
         currentBudget = budget
-        
+
         try storage.saveBudgets(budgets)
-        
+
         logBudgetEvent(.budgetCreated, budgetId: budget.id, details: "Budget '\(name)' created")
     }
-    
+
     /// Update an existing budget
     public func updateBudget(_ budget: TimeBudget) throws {
         guard let index = budgets.firstIndex(where: { $0.id == budget.id }) else {
             throw TimeBudgetError.budgetNotFound
         }
-        
+
         budgets[index] = budget
-        
+
         if currentBudget?.id == budget.id {
             currentBudget = budget
         }
-        
+
         try storage.saveBudgets(budgets)
-        
+
         logBudgetEvent(.budgetUpdated, budgetId: budget.id, details: "Budget updated")
     }
-    
+
     /// Delete a budget
     public func deleteBudget(_ budget: TimeBudget) throws {
         budgets.removeAll { $0.id == budget.id }
-        
+
         if currentBudget?.id == budget.id {
             currentBudget = budgets.first
         }
-        
+
         try storage.saveBudgets(budgets)
-        
+
         logBudgetEvent(.budgetDeleted, budgetId: budget.id, details: "Budget deleted")
     }
-    
+
     /// Set the active budget
     public func setActiveBudget(_ budget: TimeBudget) {
         currentBudget = budget
         logBudgetEvent(.budgetActivated, budgetId: budget.id, details: "Budget activated")
     }
-    
+
     /// Track spending against current budget
     public func trackSpending(amount: Double, currency: String, category: String) throws {
         guard let budget = currentBudget else {
             throw TimeBudgetError.noBudgetSelected
         }
-        
+
         guard let hourlyWage = getHourlyWage() else {
             throw TimeBudgetError.noWageConfigured
         }
-        
+
         let workMinutes = calculator.calculateWorkMinutes(
             amount: amount,
             hourlyWage: hourlyWage
         )
-        
+
         let spending = BudgetSpending(
             amount: amount,
             currency: currency,
@@ -124,66 +128,66 @@ public class TimeBudgetPlanner: BaseViewModel {
             category: category,
             timestamp: Date()
         )
-        
+
         var updatedBudget = budget
         updatedBudget.addSpending(spending)
-        
+
         try updateBudget(updatedBudget)
-        
+
         // Check for budget alerts
         checkBudgetAlerts(for: updatedBudget, spending: spending)
-        
+
         logBudgetEvent(.spendingTracked, budgetId: budget.id, details: "Spending tracked: \(amount) \(currency)")
     }
-    
+
     /// Get budget summary for current period
     public func getBudgetSummary() -> BudgetSummary? {
         guard let budget = currentBudget else { return nil }
-        
+
         return calculator.calculateBudgetSummary(budget)
     }
-    
+
     /// Get spending breakdown by category
     public func getSpendingBreakdown() -> [CategorySpending] {
         guard let budget = currentBudget else { return [] }
-        
+
         return calculator.calculateCategorySpending(budget)
     }
-    
+
     /// Get budget progress for visualization
     public func getBudgetProgress() -> BudgetProgress? {
         guard let budget = currentBudget else { return nil }
-        
+
         return calculator.calculateBudgetProgress(budget)
     }
-    
+
     /// Reset budget for new period
     public func resetBudgetForNewPeriod() throws {
         guard var budget = currentBudget else {
             throw TimeBudgetError.noBudgetSelected
         }
-        
+
         budget.resetForNewPeriod()
         try updateBudget(budget)
-        
+
         logBudgetEvent(.budgetReset, budgetId: budget.id, details: "Budget reset for new period")
     }
-    
+
     // MARK: - Private Methods
-    
+
     private func loadBudgets() {
         isLoading = true
-        
+
         do {
             budgets = try storage.loadBudgets()
             currentBudget = budgets.first
         } catch {
             errorMessage = "Failed to load budgets: \(error.localizedDescription)"
         }
-        
+
         isLoading = false
     }
-    
+
     private func setupNotifications() {
         // Listen for wage changes
         NotificationCenter.default.publisher(for: .wageUpdated)
@@ -192,13 +196,13 @@ public class TimeBudgetPlanner: BaseViewModel {
                 self.recalculateSpendingWithNewWage()
             }
     }
-    
+
     private func recalculateSpendingWithNewWage() {
         guard let hourlyWage = getHourlyWage() else { return }
-        
+
         for (index, budget) in budgets.enumerated() {
             var updatedBudget = budget
-            
+
             // Recalculate work minutes for all spending
             for (spendingIndex, spending) in budget.spending.enumerated() {
                 let newWorkMinutes = calculator.calculateWorkMinutes(
@@ -207,17 +211,17 @@ public class TimeBudgetPlanner: BaseViewModel {
                 )
                 updatedBudget.spending[spendingIndex].workMinutes = newWorkMinutes
             }
-            
+
             budgets[index] = updatedBudget
         }
-        
+
         if let currentId = currentBudget?.id {
             currentBudget = budgets.first { $0.id == currentId }
         }
-        
+
         try? storage.saveBudgets(budgets)
     }
-    
+
     private func getHourlyWage() -> Double? {
         // Get wage from Keychain
         do {
@@ -227,19 +231,19 @@ public class TimeBudgetPlanner: BaseViewModel {
             return nil
         }
     }
-    
-    private func checkBudgetAlerts(for budget: TimeBudget, spending: BudgetSpending) {
+
+    private func checkBudgetAlerts(for budget: TimeBudget, spending _: BudgetSpending) {
         let summary = calculator.calculateBudgetSummary(budget)
-        
+
         // Check overall budget alert
-        if summary.usedPercentage >= 0.8 && summary.usedPercentage < 0.9 {
+        if summary.usedPercentage >= 0.8, summary.usedPercentage < 0.9 {
             sendBudgetAlert(.approaching80Percent, budget: budget)
-        } else if summary.usedPercentage >= 0.9 && summary.usedPercentage < 1.0 {
+        } else if summary.usedPercentage >= 0.9, summary.usedPercentage < 1.0 {
             sendBudgetAlert(.approaching90Percent, budget: budget)
         } else if summary.usedPercentage >= 1.0 {
             sendBudgetAlert(.budgetExceeded, budget: budget)
         }
-        
+
         // Check category-specific alerts
         let categorySpending = calculator.calculateCategorySpending(budget)
         for category in categorySpending {
@@ -250,7 +254,7 @@ public class TimeBudgetPlanner: BaseViewModel {
             }
         }
     }
-    
+
     private func sendBudgetAlert(_ type: BudgetAlertType, budget: TimeBudget) {
         let alert = BudgetAlert(
             type: type,
@@ -259,15 +263,15 @@ public class TimeBudgetPlanner: BaseViewModel {
             message: type.message(for: budget.name),
             timestamp: Date()
         )
-        
+
         NotificationCenter.default.post(
             name: .budgetAlert,
             object: alert
         )
-        
+
         logBudgetEvent(.alertTriggered, budgetId: budget.id, details: type.rawValue)
     }
-    
+
     private func sendCategoryAlert(_ type: CategoryAlertType, budget: TimeBudget, category: String) {
         let alert = CategoryAlert(
             type: type,
@@ -277,27 +281,28 @@ public class TimeBudgetPlanner: BaseViewModel {
             message: type.message(for: category),
             timestamp: Date()
         )
-        
+
         NotificationCenter.default.post(
             name: .categoryAlert,
             object: alert
         )
-        
+
         logBudgetEvent(.categoryAlertTriggered, budgetId: budget.id, details: "\(type.rawValue) - \(category)")
     }
-    
-    private func logBudgetEvent(_ event: BudgetEvent, budgetId: UUID, details: String) {
+
+    private func logBudgetEvent(_ event: BudgetEvent, budgetId _: UUID, details: String) {
         let timestamp = ISO8601DateFormatter().string(from: Date())
-        
+
         #if DEBUG
-        print("💰 Budget Event [\(timestamp)]: \(event.rawValue) - \(details)")
+            print("💰 Budget Event [\(timestamp)]: \(event.rawValue) - \(details)")
         #endif
-        
+
         // In production, log to analytics or audit trail
     }
 }
 
 // MARK: - Time Budget Model
+
 public struct TimeBudget: Identifiable, Codable {
     public let id = UUID()
     public let name: String
@@ -307,7 +312,7 @@ public struct TimeBudget: Identifiable, Codable {
     public var spending: [BudgetSpending] = []
     public let createdAt: Date
     public var periodStartDate: Date
-    
+
     public init(
         name: String,
         totalWorkMinutes: Double,
@@ -318,23 +323,23 @@ public struct TimeBudget: Identifiable, Codable {
         self.totalWorkMinutes = totalWorkMinutes
         self.period = period
         self.categories = categories
-        self.createdAt = Date()
-        self.periodStartDate = Date()
+        createdAt = Date()
+        periodStartDate = Date()
     }
-    
+
     public mutating func addSpending(_ spending: BudgetSpending) {
         self.spending.append(spending)
     }
-    
+
     public mutating func resetForNewPeriod() {
         spending.removeAll()
         periodStartDate = Date()
     }
-    
+
     public var isCurrentPeriod: Bool {
         let calendar = Calendar.current
         let now = Date()
-        
+
         switch period {
         case .daily:
             return calendar.isDate(periodStartDate, inSameDayAs: now)
@@ -349,13 +354,14 @@ public struct TimeBudget: Identifiable, Codable {
 }
 
 // MARK: - Budget Category
+
 public struct BudgetCategory: Identifiable, Codable {
     public let id = UUID()
     public let name: String
     public let allocatedMinutes: Double
     public let color: String // Hex color code
     public let icon: String // SF Symbol name
-    
+
     public init(name: String, allocatedMinutes: Double, color: String, icon: String) {
         self.name = name
         self.allocatedMinutes = allocatedMinutes
@@ -365,6 +371,7 @@ public struct BudgetCategory: Identifiable, Codable {
 }
 
 // MARK: - Budget Spending
+
 public struct BudgetSpending: Identifiable, Codable {
     public let id = UUID()
     public let amount: Double
@@ -372,7 +379,7 @@ public struct BudgetSpending: Identifiable, Codable {
     public var workMinutes: Double
     public let category: String
     public let timestamp: Date
-    
+
     public init(amount: Double, currency: String, workMinutes: Double, category: String, timestamp: Date) {
         self.amount = amount
         self.currency = currency
@@ -383,12 +390,13 @@ public struct BudgetSpending: Identifiable, Codable {
 }
 
 // MARK: - Budget Period
+
 public enum BudgetPeriod: String, CaseIterable, Codable {
-    case daily = "daily"
-    case weekly = "weekly"
-    case monthly = "monthly"
-    case yearly = "yearly"
-    
+    case daily
+    case weekly
+    case monthly
+    case yearly
+
     public var displayName: String {
         switch self {
         case .daily: return "Daily"
@@ -397,7 +405,7 @@ public enum BudgetPeriod: String, CaseIterable, Codable {
         case .yearly: return "Yearly"
         }
     }
-    
+
     public var description: String {
         switch self {
         case .daily: return "Reset every day"
@@ -409,27 +417,29 @@ public enum BudgetPeriod: String, CaseIterable, Codable {
 }
 
 // MARK: - Budget Summary
+
 public struct BudgetSummary {
     public let totalAllocatedMinutes: Double
     public let totalUsedMinutes: Double
     public let remainingMinutes: Double
     public let usedPercentage: Double
     public let isOverBudget: Bool
-    
+
     public var formattedUsedTime: String {
         return TimeFormatter.formatMinutes(totalUsedMinutes)
     }
-    
+
     public var formattedRemainingTime: String {
         return TimeFormatter.formatMinutes(remainingMinutes)
     }
-    
+
     public var formattedTotalTime: String {
         return TimeFormatter.formatMinutes(totalAllocatedMinutes)
     }
 }
 
 // MARK: - Category Spending
+
 public struct CategorySpending {
     public let name: String
     public let allocatedMinutes: Double
@@ -438,27 +448,28 @@ public struct CategorySpending {
     public let usedPercentage: Double
     public let color: String
     public let icon: String
-    
+
     public var isOverBudget: Bool {
         return usedMinutes > allocatedMinutes
     }
-    
+
     public var formattedUsedTime: String {
         return TimeFormatter.formatMinutes(usedMinutes)
     }
-    
+
     public var formattedRemainingTime: String {
         return TimeFormatter.formatMinutes(remainingMinutes)
     }
 }
 
 // MARK: - Budget Progress
+
 public struct BudgetProgress {
     public let overallProgress: Double
     public let categoryProgress: [CategoryProgress]
     public let timeRemaining: TimeInterval
     public let projectedOverage: Double?
-    
+
     public var isOnTrack: Bool {
         return projectedOverage == nil || projectedOverage! <= 0
     }
@@ -472,21 +483,21 @@ public struct CategoryProgress {
 }
 
 // MARK: - Time Budget Calculator
+
 public class TimeBudgetCalculator {
-    
     public init() {}
-    
+
     public func calculateWorkMinutes(amount: Double, hourlyWage: Double) -> Double {
         guard hourlyWage > 0 else { return 0 }
         return (amount / hourlyWage) * 60.0
     }
-    
+
     public func calculateBudgetSummary(_ budget: TimeBudget) -> BudgetSummary {
         let totalAllocated = budget.totalWorkMinutes
         let totalUsed = budget.spending.reduce(0) { $0 + $1.workMinutes }
         let remaining = max(0, totalAllocated - totalUsed)
         let usedPercentage = totalAllocated > 0 ? totalUsed / totalAllocated : 0
-        
+
         return BudgetSummary(
             totalAllocatedMinutes: totalAllocated,
             totalUsedMinutes: totalUsed,
@@ -495,14 +506,14 @@ public class TimeBudgetCalculator {
             isOverBudget: totalUsed > totalAllocated
         )
     }
-    
+
     public func calculateCategorySpending(_ budget: TimeBudget) -> [CategorySpending] {
         return budget.categories.map { category in
             let categorySpending = budget.spending.filter { $0.category == category.name }
             let usedMinutes = categorySpending.reduce(0) { $0 + $1.workMinutes }
             let remaining = max(0, category.allocatedMinutes - usedMinutes)
             let usedPercentage = category.allocatedMinutes > 0 ? usedMinutes / category.allocatedMinutes : 0
-            
+
             return CategorySpending(
                 name: category.name,
                 allocatedMinutes: category.allocatedMinutes,
@@ -514,11 +525,11 @@ public class TimeBudgetCalculator {
             )
         }
     }
-    
+
     public func calculateBudgetProgress(_ budget: TimeBudget) -> BudgetProgress {
         let summary = calculateBudgetSummary(budget)
         let categorySpending = calculateCategorySpending(budget)
-        
+
         let categoryProgress = categorySpending.map { category in
             CategoryProgress(
                 name: category.name,
@@ -527,13 +538,13 @@ public class TimeBudgetCalculator {
                 isOverBudget: category.isOverBudget
             )
         }
-        
+
         // Calculate time remaining in current period
         let timeRemaining = calculateTimeRemainingInPeriod(budget.period, startDate: budget.periodStartDate)
-        
+
         // Project potential overage based on current spending rate
         let projectedOverage = calculateProjectedOverage(budget, timeRemaining: timeRemaining)
-        
+
         return BudgetProgress(
             overallProgress: summary.usedPercentage,
             categoryProgress: categoryProgress,
@@ -541,11 +552,11 @@ public class TimeBudgetCalculator {
             projectedOverage: projectedOverage
         )
     }
-    
+
     private func calculateTimeRemainingInPeriod(_ period: BudgetPeriod, startDate: Date) -> TimeInterval {
         let calendar = Calendar.current
         let now = Date()
-        
+
         let endDate: Date
         switch period {
         case .daily:
@@ -557,24 +568,24 @@ public class TimeBudgetCalculator {
         case .yearly:
             endDate = calendar.date(byAdding: .year, value: 1, to: startDate) ?? now
         }
-        
+
         return max(0, endDate.timeIntervalSince(now))
     }
-    
+
     private func calculateProjectedOverage(_ budget: TimeBudget, timeRemaining: TimeInterval) -> Double? {
         guard timeRemaining > 0 else { return nil }
-        
+
         let periodDuration = getPeriodDuration(budget.period)
         let timeElapsed = periodDuration - timeRemaining
-        
+
         guard timeElapsed > 0 else { return nil }
-        
+
         let currentSpendingRate = budget.spending.reduce(0) { $0 + $1.workMinutes } / (timeElapsed / 60.0) // minutes per minute
         let projectedTotalSpending = currentSpendingRate * (periodDuration / 60.0)
-        
+
         return max(0, projectedTotalSpending - budget.totalWorkMinutes)
     }
-    
+
     private func getPeriodDuration(_ period: BudgetPeriod) -> TimeInterval {
         switch period {
         case .daily: return 24 * 60 * 60 // 1 day
@@ -586,19 +597,19 @@ public class TimeBudgetCalculator {
 }
 
 // MARK: - Time Formatter
+
 public class TimeFormatter {
-    
     public static func formatMinutes(_ minutes: Double) -> String {
         let hours = Int(minutes / 60)
         let remainingMinutes = Int(minutes.truncatingRemainder(dividingBy: 60))
-        
+
         if hours > 0 {
             return "\(hours)h \(remainingMinutes)m"
         } else {
             return "\(remainingMinutes)m"
         }
     }
-    
+
     public static func formatHours(_ minutes: Double) -> String {
         let hours = minutes / 60.0
         return String(format: "%.1fh", hours)
@@ -606,6 +617,7 @@ public class TimeFormatter {
 }
 
 // MARK: - Errors and Events
+
 public enum TimeBudgetError: LocalizedError {
     case invalidName
     case invalidWorkTime
@@ -615,7 +627,7 @@ public enum TimeBudgetError: LocalizedError {
     case noBudgetSelected
     case noWageConfigured
     case storageFailed(Error)
-    
+
     public var errorDescription: String? {
         switch self {
         case .invalidName:
@@ -632,7 +644,7 @@ public enum TimeBudgetError: LocalizedError {
             return "No budget is currently selected"
         case .noWageConfigured:
             return "Hourly wage is not configured"
-        case .storageFailed(let error):
+        case let .storageFailed(error):
             return "Storage failed: \(error.localizedDescription)"
         }
     }
@@ -650,11 +662,12 @@ private enum BudgetEvent: String {
 }
 
 // MARK: - Alert Types
+
 public enum BudgetAlertType: String {
     case approaching80Percent = "APPROACHING_80_PERCENT"
     case approaching90Percent = "APPROACHING_90_PERCENT"
     case budgetExceeded = "BUDGET_EXCEEDED"
-    
+
     public func message(for budgetName: String) -> String {
         switch self {
         case .approaching80Percent:
@@ -670,7 +683,7 @@ public enum BudgetAlertType: String {
 public enum CategoryAlertType: String {
     case categoryApproaching90Percent = "CATEGORY_APPROACHING_90_PERCENT"
     case categoryExceeded = "CATEGORY_EXCEEDED"
-    
+
     public func message(for categoryName: String) -> String {
         switch self {
         case .categoryApproaching90Percent:
@@ -699,9 +712,9 @@ public struct CategoryAlert {
 }
 
 // MARK: - Notification Names
+
 extension Notification.Name {
     static let budgetAlert = Notification.Name("budgetAlert")
     static let categoryAlert = Notification.Name("categoryAlert")
     static let wageUpdated = Notification.Name("wageUpdated")
 }
-

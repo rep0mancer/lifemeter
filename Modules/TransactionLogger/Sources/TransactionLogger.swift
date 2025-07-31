@@ -1,26 +1,29 @@
-import Foundation
-import UserNotifications
 import CalcCore
+import Foundation
 import HistoryStore
+import UserNotifications
 
 // MARK: - Transaction Logger
+
 @available(iOS 17.0, *)
 public class TransactionLogger: ObservableObject {
-    
     // MARK: - Singleton
+
     public static let shared = TransactionLogger()
-    
+
     // MARK: - Properties
+
     private let historyStore = HistoryStore.shared
     private let notificationCenter = UNUserNotificationCenter.current()
-    
+
     // MARK: - Initialization
+
     private init() {
         setupNotificationCategories()
     }
-    
+
     // MARK: - Public Methods
-    
+
     /// Handle incoming Apple Pay transaction from Shortcuts
     @MainActor
     public func handle(_ transaction: Transaction) async throws {
@@ -28,13 +31,13 @@ public class TransactionLogger: ObservableObject {
         guard let wage = try HardenedKeychainManager.shared.loadWage() else {
             throw TransactionLoggerError.noWageConfigured
         }
-        
+
         // Calculate work time
         let minutes = ConversionEngine.convertToWorkTime(
             price: transaction.amount,
             hourlyWage: wage.amount
         )
-        
+
         // Create calculation record
         let calculation = Calculation(
             price: transaction.amount,
@@ -45,65 +48,65 @@ public class TransactionLogger: ObservableObject {
             cardName: transaction.cardName,
             timestamp: Date()
         )
-        
+
         // Save to history
         try await historyStore.save(calculation)
-        
+
         // Post local notification
         await postNotification(for: calculation)
     }
-    
+
     // MARK: - Notification Management
-    
+
     private func setupNotificationCategories() {
         let undoAction = UNNotificationAction(
             identifier: "UNDO_TRANSACTION",
             title: "Undo",
             options: [.destructive]
         )
-        
+
         let openAction = UNNotificationAction(
             identifier: "OPEN_TRANSACTION",
             title: "Open",
             options: [.foreground]
         )
-        
+
         let category = UNNotificationCategory(
             identifier: "APPLE_PAY_MINUTES",
             actions: [undoAction, openAction],
             intentIdentifiers: [],
             options: [.customDismissAction]
         )
-        
+
         notificationCenter.setNotificationCategories([category])
     }
-    
+
     private func postNotification(for calculation: Calculation) async {
         let content = UNMutableNotificationContent()
-        
+
         // Format notification text
         let formattedPrice = CurrencyUtilities.formatPrice(calculation.price, currency: calculation.currency)
         let formattedTime = ConversionEngine.formatWorkTime(calculation.minutes)
         let merchantName = calculation.merchant ?? "Purchase"
-        
+
         content.title = "Apple Pay Transaction"
         content.body = "\(formattedPrice) \(merchantName) • \(formattedTime)"
         content.categoryIdentifier = "APPLE_PAY_MINUTES"
         content.sound = UNNotificationSound(named: UNNotificationSoundName("SoftConfirm.caf"))
-        
+
         // Add user info for deep linking
         content.userInfo = [
             "calculationId": calculation.id.uuidString,
-            "source": "applePay"
+            "source": "applePay",
         ]
-        
+
         // Create request
         let request = UNNotificationRequest(
             identifier: "applePay_\(calculation.id.uuidString)",
             content: content,
             trigger: nil // Immediate delivery
         )
-        
+
         // Post notification
         do {
             try await notificationCenter.add(request)
@@ -111,9 +114,9 @@ public class TransactionLogger: ObservableObject {
             print("Failed to post notification: \(error)")
         }
     }
-    
+
     // MARK: - Notification Actions
-    
+
     public func handleNotificationAction(_ actionIdentifier: String, calculationId: String) async {
         switch actionIdentifier {
         case "UNDO_TRANSACTION":
@@ -124,31 +127,31 @@ public class TransactionLogger: ObservableObject {
             break
         }
     }
-    
+
     private func undoTransaction(calculationId: String) async {
         guard let uuid = UUID(uuidString: calculationId) else { return }
-        
+
         do {
             try await historyStore.delete(calculationId: uuid)
-            
+
             // Post confirmation notification
             let content = UNMutableNotificationContent()
             content.title = "Transaction Removed"
             content.body = "Apple Pay transaction has been removed from your history"
             content.sound = UNNotificationSound.default
-            
+
             let request = UNNotificationRequest(
                 identifier: "undo_confirmation_\(calculationId)",
                 content: content,
                 trigger: nil
             )
-            
+
             try await notificationCenter.add(request)
         } catch {
             print("Failed to undo transaction: \(error)")
         }
     }
-    
+
     private func openTransaction(calculationId: String) async {
         // This will be handled by the app delegate to open the specific transaction
         NotificationCenter.default.post(
@@ -160,6 +163,7 @@ public class TransactionLogger: ObservableObject {
 }
 
 // MARK: - Transaction Model
+
 @available(iOS 17.0, *)
 public struct Transaction: Codable, Sendable {
     public let amount: Double
@@ -167,7 +171,7 @@ public struct Transaction: Codable, Sendable {
     public let merchant: String?
     public let cardName: String?
     public let timestamp: Date
-    
+
     public init(
         amount: Double,
         currency: String,
@@ -184,12 +188,13 @@ public struct Transaction: Codable, Sendable {
 }
 
 // MARK: - Calculation Source Extension
-extension Calculation {
-    public enum Source: String, CaseIterable, Codable {
-        case manual = "manual"
-        case ocr = "ocr"
-        case applePay = "applePay"
-        
+
+public extension Calculation {
+    enum Source: String, CaseIterable, Codable {
+        case manual
+        case ocr
+        case applePay
+
         public var displayName: String {
             switch self {
             case .manual: return "Manual Entry"
@@ -197,7 +202,7 @@ extension Calculation {
             case .applePay: return "Apple Pay"
             }
         }
-        
+
         public var icon: String {
             switch self {
             case .manual: return "keyboard"
@@ -209,11 +214,12 @@ extension Calculation {
 }
 
 // MARK: - Errors
+
 public enum TransactionLoggerError: LocalizedError {
     case noWageConfigured
     case invalidTransaction
     case notificationPermissionDenied
-    
+
     public var errorDescription: String? {
         switch self {
         case .noWageConfigured:
@@ -227,7 +233,7 @@ public enum TransactionLoggerError: LocalizedError {
 }
 
 // MARK: - Notification Names
+
 extension Notification.Name {
     static let openTransactionDetail = Notification.Name("openTransactionDetail")
 }
-

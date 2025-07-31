@@ -3,21 +3,24 @@ import SwiftUI
 import UIKit
 
 // MARK: - Social Sharing Manager
+
 @available(iOS 15.0, *)
 public class SocialSharingManager: ObservableObject {
-    
     // MARK: - Singleton
+
     public static let shared = SocialSharingManager()
-    
+
     // MARK: - Properties
+
     private let cardGenerator = SharingCardGenerator()
     private let templateManager = SharingTemplateManager()
-    
+
     // MARK: - Initialization
+
     private init() {}
-    
+
     // MARK: - Public Methods
-    
+
     /// Generate and share a calculation result
     public func shareCalculation(
         price: Double,
@@ -34,7 +37,7 @@ public class SocialSharingManager: ObservableObject {
                     workTime: workTime,
                     template: template
                 )
-                
+
                 await MainActor.run {
                     self.presentShareSheet(with: card, from: viewController)
                 }
@@ -45,7 +48,7 @@ public class SocialSharingManager: ObservableObject {
             }
         }
     }
-    
+
     /// Generate and share budget summary
     public func shareBudgetSummary(
         _ summary: BudgetSummary,
@@ -60,7 +63,7 @@ public class SocialSharingManager: ObservableObject {
                     budgetName: budgetName,
                     template: template
                 )
-                
+
                 await MainActor.run {
                     self.presentShareSheet(with: card, from: viewController)
                 }
@@ -71,7 +74,7 @@ public class SocialSharingManager: ObservableObject {
             }
         }
     }
-    
+
     /// Generate and share time awareness message
     public func shareTimeAwareness(
         totalCalculations: Int,
@@ -86,7 +89,7 @@ public class SocialSharingManager: ObservableObject {
                     totalWorkTime: totalWorkTime,
                     template: template
                 )
-                
+
                 await MainActor.run {
                     self.presentShareSheet(with: card, from: viewController)
                 }
@@ -97,12 +100,12 @@ public class SocialSharingManager: ObservableObject {
             }
         }
     }
-    
+
     /// Get available sharing templates
     public func getAvailableTemplates() -> [SharingTemplate] {
         return SharingTemplate.allCases
     }
-    
+
     /// Preview a sharing card without sharing
     public func previewCard(
         price: Double,
@@ -117,125 +120,122 @@ public class SocialSharingManager: ObservableObject {
             template: template
         )
     }
-    
+
     // MARK: - Private Methods
-    
+
     private func generateCalculationCard(
         price: Double,
         currency: String,
         workTime: String,
         template: SharingTemplate
     ) async throws -> UIImage {
-        
         let cardView = CalculationSharingCard(
             price: price,
             currency: currency,
             workTime: workTime,
             template: template
         )
-        
+
         return try await cardGenerator.generateImage(from: cardView)
     }
-    
+
     private func generateBudgetCard(
         summary: BudgetSummary,
         budgetName: String,
         template: SharingTemplate
     ) async throws -> UIImage {
-        
         let cardView = BudgetSharingCard(
             summary: summary,
             budgetName: budgetName,
             template: template
         )
-        
+
         return try await cardGenerator.generateImage(from: cardView)
     }
-    
+
     private func generateAwarenessCard(
         totalCalculations: Int,
         totalWorkTime: String,
         template: SharingTemplate
     ) async throws -> UIImage {
-        
         let cardView = AwarenessSharingCard(
             totalCalculations: totalCalculations,
             totalWorkTime: totalWorkTime,
             template: template
         )
-        
+
         return try await cardGenerator.generateImage(from: cardView)
     }
-    
+
     private func presentShareSheet(with image: UIImage, from viewController: UIViewController) {
         let text = generateShareText()
         let items: [Any] = [text, image]
-        
+
         let activityViewController = UIActivityViewController(
             activityItems: items,
             applicationActivities: nil
         )
-        
+
         // Exclude certain activity types for privacy
         activityViewController.excludedActivityTypes = [
             .addToReadingList,
             .assignToContact,
             .openInIBooks,
             .postToVimeo,
-            .postToFlickr
+            .postToFlickr,
         ]
-        
+
         // Configure for iPad
         if let popover = activityViewController.popoverPresentationController {
             popover.sourceView = viewController.view
             popover.sourceRect = CGRect(x: viewController.view.bounds.midX, y: viewController.view.bounds.midY, width: 0, height: 0)
             popover.permittedArrowDirections = []
         }
-        
+
         viewController.present(activityViewController, animated: true)
     }
-    
+
     private func generateShareText() -> String {
         return "Check out how much work time this purchase costs with LifeMeter! 💰⏰ #LifeMeter #TimeAwareness #FinancialWisdom"
     }
-    
+
     private func showError(_ error: Error, from viewController: UIViewController) {
         let alert = UIAlertController(
             title: "Sharing Failed",
             message: "Unable to generate sharing card: \(error.localizedDescription)",
             preferredStyle: .alert
         )
-        
+
         alert.addAction(UIAlertAction(title: "OK", style: .default))
         viewController.present(alert, animated: true)
     }
 }
 
 // MARK: - Sharing Card Generator
+
 @available(iOS 15.0, *)
 public class SharingCardGenerator {
-    
     public init() {}
-    
+
     /// Generate UIImage from SwiftUI view
     public func generateImage<Content: View>(from view: Content) async throws -> UIImage {
         return try await withCheckedThrowingContinuation { continuation in
             DispatchQueue.main.async {
                 let hostingController = UIHostingController(rootView: view)
-                
+
                 // Set fixed size for sharing cards
                 let cardSize = CGSize(width: 400, height: 600)
                 hostingController.view.frame = CGRect(origin: .zero, size: cardSize)
-                
+
                 // Force layout
                 hostingController.view.layoutIfNeeded()
-                
+
                 // Generate image
                 let renderer = UIGraphicsImageRenderer(size: cardSize)
                 let image = renderer.image { context in
                     hostingController.view.layer.render(in: context.cgContext)
                 }
-                
+
                 continuation.resume(returning: image)
             }
         }
@@ -243,10 +243,10 @@ public class SharingCardGenerator {
 }
 
 // MARK: - Sharing Template Manager
+
 public class SharingTemplateManager {
-    
     public init() {}
-    
+
     public func getTemplate(_ template: SharingTemplate) -> SharingTemplateStyle {
         switch template {
         case .modern:
@@ -266,14 +266,15 @@ public class SharingTemplateManager {
 }
 
 // MARK: - Sharing Templates
+
 public enum SharingTemplate: String, CaseIterable {
-    case modern = "modern"
-    case minimal = "minimal"
-    case playful = "playful"
-    case professional = "professional"
-    case budget = "budget"
-    case awareness = "awareness"
-    
+    case modern
+    case minimal
+    case playful
+    case professional
+    case budget
+    case awareness
+
     public var displayName: String {
         switch self {
         case .modern: return "Modern"
@@ -284,7 +285,7 @@ public enum SharingTemplate: String, CaseIterable {
         case .awareness: return "Time Awareness"
         }
     }
-    
+
     public var description: String {
         switch self {
         case .modern: return "Clean design with gradients"
@@ -298,6 +299,7 @@ public enum SharingTemplate: String, CaseIterable {
 }
 
 // MARK: - Template Styles
+
 public protocol SharingTemplateStyle {
     var backgroundColor: Color { get }
     var primaryColor: Color { get }
@@ -376,18 +378,18 @@ public struct AwarenessTemplateStyle: SharingTemplateStyle {
 }
 
 // MARK: - Calculation Sharing Card
+
 @available(iOS 15.0, *)
 public struct CalculationSharingCard: View {
-    
     let price: Double
     let currency: String
     let workTime: String
     let template: SharingTemplate
-    
+
     private var style: SharingTemplateStyle {
         SharingTemplateManager().getTemplate(template)
     }
-    
+
     public var body: some View {
         VStack(spacing: 24) {
             // Header
@@ -395,15 +397,15 @@ public struct CalculationSharingCard: View {
                 Image(systemName: "clock.fill")
                     .font(.system(size: 40))
                     .foregroundColor(style.accentColor)
-                
+
                 Text("LifeMeter")
                     .font(.title2)
                     .fontWeight(.bold)
                     .foregroundColor(style.textColor)
             }
-            
+
             Spacer()
-            
+
             // Main Content
             VStack(spacing: 16) {
                 // Price
@@ -411,38 +413,38 @@ public struct CalculationSharingCard: View {
                     Text("Purchase Price")
                         .font(.subheadline)
                         .foregroundColor(style.secondaryColor)
-                    
+
                     Text("\(currency)\(String(format: "%.2f", price))")
                         .font(.system(size: 36, weight: .bold, design: .rounded))
                         .foregroundColor(style.primaryColor)
                 }
-                
+
                 // Arrow or equals
                 Image(systemName: "arrow.down")
                     .font(.title2)
                     .foregroundColor(style.accentColor)
-                
+
                 // Work Time
                 VStack(spacing: 4) {
                     Text("Work Time Required")
                         .font(.subheadline)
                         .foregroundColor(style.secondaryColor)
-                    
+
                     Text(workTime)
                         .font(.system(size: 32, weight: .bold, design: .rounded))
                         .foregroundColor(style.primaryColor)
                 }
             }
-            
+
             Spacer()
-            
+
             // Footer
             VStack(spacing: 8) {
                 Text("Understanding the true cost of purchases")
                     .font(.caption)
                     .foregroundColor(style.secondaryColor)
                     .multilineTextAlignment(.center)
-                
+
                 if template == .playful {
                     Text("💰 ⏰ 🤔")
                         .font(.title3)
@@ -464,17 +466,17 @@ public struct CalculationSharingCard: View {
 }
 
 // MARK: - Budget Sharing Card
+
 @available(iOS 15.0, *)
 public struct BudgetSharingCard: View {
-    
     let summary: BudgetSummary
     let budgetName: String
     let template: SharingTemplate
-    
+
     private var style: SharingTemplateStyle {
         SharingTemplateManager().getTemplate(template)
     }
-    
+
     public var body: some View {
         VStack(spacing: 24) {
             // Header
@@ -482,28 +484,28 @@ public struct BudgetSharingCard: View {
                 Image(systemName: "chart.pie.fill")
                     .font(.system(size: 40))
                     .foregroundColor(style.accentColor)
-                
+
                 Text("Budget Tracker")
                     .font(.title2)
                     .fontWeight(.bold)
                     .foregroundColor(style.textColor)
             }
-            
+
             Spacer()
-            
+
             // Budget Name
             Text(budgetName)
                 .font(.title3)
                 .fontWeight(.semibold)
                 .foregroundColor(style.primaryColor)
                 .multilineTextAlignment(.center)
-            
+
             // Progress Circle
             ZStack {
                 Circle()
                     .stroke(style.secondaryColor.opacity(0.3), lineWidth: 12)
                     .frame(width: 120, height: 120)
-                
+
                 Circle()
                     .trim(from: 0, to: min(summary.usedPercentage, 1.0))
                     .stroke(
@@ -512,19 +514,19 @@ public struct BudgetSharingCard: View {
                     )
                     .frame(width: 120, height: 120)
                     .rotationEffect(.degrees(-90))
-                
+
                 VStack(spacing: 2) {
                     Text("\(Int(summary.usedPercentage * 100))%")
                         .font(.title2)
                         .fontWeight(.bold)
                         .foregroundColor(style.textColor)
-                    
+
                     Text("used")
                         .font(.caption)
                         .foregroundColor(style.secondaryColor)
                 }
             }
-            
+
             // Stats
             VStack(spacing: 12) {
                 HStack {
@@ -536,9 +538,9 @@ public struct BudgetSharingCard: View {
                             .font(.headline)
                             .foregroundColor(style.textColor)
                     }
-                    
+
                     Spacer()
-                    
+
                     VStack(alignment: .trailing, spacing: 4) {
                         Text("Remaining")
                             .font(.caption)
@@ -548,7 +550,7 @@ public struct BudgetSharingCard: View {
                             .foregroundColor(summary.isOverBudget ? Color.red : style.accentColor)
                     }
                 }
-                
+
                 if summary.isOverBudget {
                     Text("⚠️ Over Budget")
                         .font(.caption)
@@ -559,9 +561,9 @@ public struct BudgetSharingCard: View {
                         .cornerRadius(8)
                 }
             }
-            
+
             Spacer()
-            
+
             // Footer
             Text("Track your time budget with LifeMeter")
                 .font(.caption)
@@ -583,17 +585,17 @@ public struct BudgetSharingCard: View {
 }
 
 // MARK: - Awareness Sharing Card
+
 @available(iOS 15.0, *)
 public struct AwarenessSharingCard: View {
-    
     let totalCalculations: Int
     let totalWorkTime: String
     let template: SharingTemplate
-    
+
     private var style: SharingTemplateStyle {
         SharingTemplateManager().getTemplate(template)
     }
-    
+
     public var body: some View {
         VStack(spacing: 24) {
             // Header
@@ -601,45 +603,45 @@ public struct AwarenessSharingCard: View {
                 Image(systemName: "lightbulb.fill")
                     .font(.system(size: 40))
                     .foregroundColor(style.accentColor)
-                
+
                 Text("Time Awareness")
                     .font(.title2)
                     .fontWeight(.bold)
                     .foregroundColor(style.textColor)
             }
-            
+
             Spacer()
-            
+
             // Main Message
             VStack(spacing: 16) {
                 Text("I've calculated")
                     .font(.headline)
                     .foregroundColor(style.secondaryColor)
-                
+
                 Text("\(totalCalculations)")
                     .font(.system(size: 48, weight: .bold, design: .rounded))
                     .foregroundColor(style.primaryColor)
-                
+
                 Text("purchases")
                     .font(.headline)
                     .foregroundColor(style.secondaryColor)
-                
+
                 Text("representing")
                     .font(.subheadline)
                     .foregroundColor(style.secondaryColor)
-                
+
                 Text(totalWorkTime)
                     .font(.system(size: 32, weight: .bold, design: .rounded))
                     .foregroundColor(style.accentColor)
-                
+
                 Text("of work time")
                     .font(.headline)
                     .foregroundColor(style.secondaryColor)
             }
             .multilineTextAlignment(.center)
-            
+
             Spacer()
-            
+
             // Call to Action
             VStack(spacing: 8) {
                 Text("Understanding the true cost of purchases")
@@ -647,12 +649,12 @@ public struct AwarenessSharingCard: View {
                     .fontWeight(.medium)
                     .foregroundColor(style.textColor)
                     .multilineTextAlignment(.center)
-                
+
                 Text("Get LifeMeter and start your journey")
                     .font(.caption)
                     .foregroundColor(style.secondaryColor)
                     .multilineTextAlignment(.center)
-                
+
                 if template == .playful {
                     Text("🎯 💡 ⏰")
                         .font(.title3)
@@ -674,11 +676,12 @@ public struct AwarenessSharingCard: View {
 }
 
 // MARK: - Sharing Error
+
 public enum SharingError: LocalizedError {
     case imageGenerationFailed
     case templateNotFound
     case invalidData
-    
+
     public var errorDescription: String? {
         switch self {
         case .imageGenerationFailed:
@@ -690,4 +693,3 @@ public enum SharingError: LocalizedError {
         }
     }
 }
-

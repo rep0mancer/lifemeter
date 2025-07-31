@@ -67,7 +67,7 @@ func addTimeBudgetEntity(to model: NSManagedObjectModel) {
         categoriesDataAttribute,
         spendingDataAttribute,
         createdAtAttribute,
-        periodStartDateAttribute
+        periodStartDateAttribute,
     ]
 
     model.entities.append(entity)

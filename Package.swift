@@ -6,7 +6,7 @@ let package = Package(
     platforms: [
         .iOS(.v15),
         .watchOS(.v8),
-        .macOS(.v12)
+        .macOS(.v12),
     ],
     products: [
         .library(name: "WageOnboarding", targets: ["WageOnboarding"]),
@@ -20,13 +20,14 @@ let package = Package(
         .library(name: "ExchangeRates", targets: ["ExchangeRates"]),
         .library(name: "TimeBudget", targets: ["TimeBudget"]),
         .library(name: "SocialSharing", targets: ["SocialSharing"]),
-        .library(name: "TransactionLogger", targets: ["TransactionLogger"])
+        .library(name: "TransactionLogger", targets: ["TransactionLogger"]),
     ],
     dependencies: [
         // No external dependencies - privacy-first approach
     ],
     targets: [
         // MARK: - Core Modules
+
         .target(
             name: "CalcCore",
             path: "Modules/CalcCore/Sources"
@@ -38,6 +39,7 @@ let package = Package(
         ),
 
         // MARK: - Data Layer
+
         .target(
             name: "HistoryStore",
             dependencies: ["CalcCore"],
@@ -50,6 +52,7 @@ let package = Package(
         ),
 
         // MARK: - UI Modules
+
         .target(
             name: "WageOnboarding",
             dependencies: ["CalcCore", "HistoryStore"],
@@ -84,6 +87,7 @@ let package = Package(
         ),
 
         // MARK: - Utility Modules
+
         .target(
             name: "ExchangeRates",
             dependencies: ["CalcCore"],
@@ -128,6 +132,7 @@ let package = Package(
         ),
 
         // MARK: - Widget Extension
+
         .target(
             name: "LifeWidget",
             dependencies: ["CalcCore", "CatRenderer", "HistoryStore"],
@@ -140,6 +145,7 @@ let package = Package(
         ),
 
         // MARK: - App Shell
+
         .target(
             name: "AppShell",
             dependencies: [
@@ -147,7 +153,7 @@ let package = Package(
                 "PriceCapture",
                 "CalcCore",
                 "CatRenderer",
-                "HistoryStore"
+                "HistoryStore",
             ],
             path: "Modules/AppShell/Sources"
         ),
@@ -155,6 +161,6 @@ let package = Package(
             name: "AppShellTests",
             dependencies: ["AppShell"],
             path: "Modules/AppShell/Tests"
-        )
+        ),
     ]
 )

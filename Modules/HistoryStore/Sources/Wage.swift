@@ -41,5 +41,5 @@ public enum PayPeriod: String, Codable {
     case daily
     case weekly
     case monthly
-case yearly
+    case yearly
 }

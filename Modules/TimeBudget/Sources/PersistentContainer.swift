@@ -1,5 +1,5 @@
-import Foundation
 import CoreData
+import Foundation
 import HistoryStore
 
 /// A lightweight wrapper around the app's shared Core Data container.
@@ -21,6 +21,6 @@ public final class PersistentContainer {
     private init() {
         // Reuse the same container provided by `DataController`.
         let container = DataController.shared.container
-        self.viewContext = container.viewContext
+        viewContext = container.viewContext
     }
 }
