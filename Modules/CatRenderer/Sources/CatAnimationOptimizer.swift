@@ -66,7 +66,7 @@ public class CatAnimationOptimizer {
     }
 
     /// Pre-warm cache (call during app startup)
-    public func preWarmCache(completion: @escaping () -> Void) {
+    public func preWarmCache(completion: @escaping @Sendable () -> Void) {
         guard !isInitialized else {
             completion()
             return

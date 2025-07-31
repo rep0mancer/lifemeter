@@ -3,6 +3,7 @@ import Combine
 // swiftlint:disable force_unwrapping
 import Foundation
 import SwiftUI
+import os.log
 
 // MARK: - Time Budget Planner
 
@@ -294,7 +295,8 @@ public class TimeBudgetPlanner: BaseViewModel {
         let timestamp = ISO8601DateFormatter().string(from: Date())
 
         #if DEBUG
-            print("💰 Budget Event [\(timestamp)]: \(event.rawValue) - \(details)")
+            os_log(.debug, "\u{1F4B0} Budget Event [%{public}@]: %{public}@ - %{public}@",
+                   timestamp, event.rawValue, details)
         #endif
 
         // In production, log to analytics or audit trail
