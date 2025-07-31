@@ -86,6 +86,7 @@ let package = Package(
         // MARK: - Utility Modules
         .target(
             name: "ExchangeRates",
+            dependencies: ["CalcCore"],
             path: "Modules/ExchangeRates/Sources"
         ),
         .testTarget(
