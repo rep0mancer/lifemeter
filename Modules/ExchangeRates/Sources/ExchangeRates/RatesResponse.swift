@@ -12,4 +12,3 @@ public struct RatesResponse: Codable {
         return Date() >= expiry
     }
 }
-

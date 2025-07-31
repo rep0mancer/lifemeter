@@ -1,16 +1,18 @@
-import SwiftUI
-import Combine
 import CalcCore
+import Combine
+import SwiftUI
 
 // MARK: - Wage Entry View
+
 @available(iOS 15.0, *)
 public struct WageEntryView: View {
-    
     // MARK: - Properties
+
     @StateObject private var viewModel = WageEntryViewModel()
     @Environment(\.dismiss) private var dismiss
-    
+
     // MARK: - Body
+
     public var body: some View {
         NavigationView {
             ScrollView {
@@ -35,25 +37,26 @@ public struct WageEntryView: View {
             }
         }
         .alert("Error", isPresented: $viewModel.showingError) {
-            Button("OK") { }
+            Button("OK") {}
         } message: {
             Text(viewModel.errorMessage)
         }
     }
-    
+
     // MARK: - Header Section
+
     private var headerSection: some View {
         VStack(spacing: 16) {
             Image(systemName: "dollarsign.circle.fill")
                 .font(.system(size: 60))
                 .foregroundColor(.blue)
-            
+
             VStack(spacing: 8) {
                 Text("What's your hourly wage?")
                     .font(.title2)
                     .fontWeight(.semibold)
                     .multilineTextAlignment(.center)
-                
+
                 Text("This helps LifeMeter convert prices to work time")
                     .font(.subheadline)
                     .foregroundColor(.secondary)
@@ -61,21 +64,22 @@ public struct WageEntryView: View {
             }
         }
     }
-    
+
     // MARK: - Wage Input Section
+
     private var wageInputSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Hourly Wage")
                 .font(.headline)
                 .fontWeight(.semibold)
-            
+
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
                     Text(viewModel.selectedCurrency.symbol)
                         .font(.title2)
                         .fontWeight(.medium)
                         .foregroundColor(.primary)
-                    
+
                     TextField("0.00", text: $viewModel.wageText)
                         .font(.title2)
                         .fontWeight(.medium)
@@ -91,14 +95,14 @@ public struct WageEntryView: View {
                     RoundedRectangle(cornerRadius: 12)
                         .stroke(viewModel.wageValidationState.borderColor, lineWidth: 1)
                 )
-                
+
                 // Validation Error Message
-                if case .invalid(let message) = viewModel.wageValidationState {
+                if case let .invalid(message) = viewModel.wageValidationState {
                     HStack {
                         Image(systemName: "exclamationmark.triangle.fill")
                             .foregroundColor(.red)
                             .font(.caption)
-                        
+
                         Text(message)
                             .font(.caption)
                             .foregroundColor(.red)
@@ -109,14 +113,15 @@ public struct WageEntryView: View {
         }
         .animation(.easeInOut(duration: 0.2), value: viewModel.wageValidationState)
     }
-    
+
     // MARK: - Currency Section
+
     private var currencySection: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Currency")
                 .font(.headline)
                 .fontWeight(.semibold)
-            
+
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 12) {
                     ForEach(viewModel.supportedCurrencies, id: \.code) { currency in
@@ -132,14 +137,15 @@ public struct WageEntryView: View {
             }
         }
     }
-    
+
     // MARK: - Period Section
+
     private var periodSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Pay Period")
                 .font(.headline)
                 .fontWeight(.semibold)
-            
+
             VStack(spacing: 16) {
                 // Default Monthly Option (Prominent)
                 PeriodButton(
@@ -149,7 +155,7 @@ public struct WageEntryView: View {
                 ) {
                     viewModel.selectPeriod(.monthly)
                 }
-                
+
                 // Advanced Options (Collapsed by default)
                 DisclosureGroup {
                     VStack(spacing: 12) {
@@ -159,21 +165,21 @@ public struct WageEntryView: View {
                         ) {
                             viewModel.selectPeriod(.hourly)
                         }
-                        
+
                         PeriodButton(
                             period: .daily,
                             isSelected: viewModel.selectedPeriod == .daily
                         ) {
                             viewModel.selectPeriod(.daily)
                         }
-                        
+
                         PeriodButton(
                             period: .weekly,
                             isSelected: viewModel.selectedPeriod == .weekly
                         ) {
                             viewModel.selectPeriod(.weekly)
                         }
-                        
+
                         PeriodButton(
                             period: .yearly,
                             isSelected: viewModel.selectedPeriod == .yearly
@@ -196,8 +202,9 @@ public struct WageEntryView: View {
             }
         }
     }
-    
+
     // MARK: - Action Buttons
+
     private var actionButtonsSection: some View {
         VStack(spacing: 12) {
             Button(action: viewModel.saveWage) {
@@ -209,7 +216,7 @@ public struct WageEntryView: View {
                     } else {
                         Image(systemName: "checkmark.circle.fill")
                     }
-                    
+
                     Text("Save Wage")
                         .fontWeight(.semibold)
                 }
@@ -220,7 +227,7 @@ public struct WageEntryView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 12))
             }
             .disabled(!viewModel.isConvertButtonEnabled || viewModel.isLoading)
-            
+
             Button("Cancel") {
                 dismiss()
             }
@@ -231,43 +238,46 @@ public struct WageEntryView: View {
 }
 
 // MARK: - Wage Entry View Model
+
 @available(iOS 15.0, *)
 public class WageEntryViewModel: ObservableObject {
-    
     // MARK: - Published Properties
+
     @Published var wageText: String = ""
-    @Published var selectedCurrency: Currency = Currency.defaultCurrency
+    @Published var selectedCurrency: Currency = .defaultCurrency
     @Published var selectedPeriod: PayPeriod = .monthly
     @Published var wageValidationState: ValidationState = .valid
     @Published var showingError = false
     @Published var errorMessage = ""
     @Published var isLoading = false
-    
+
     // MARK: - Computed Properties
+
     var supportedCurrencies: [Currency] {
         Currency.supportedCurrencies
     }
-    
+
     var isConvertButtonEnabled: Bool {
         if case .valid = wageValidationState {
             return !isLoading
         }
         return false
     }
-    
+
     // MARK: - Initialization
+
     public init() {
         setupDefaultCurrency()
     }
-    
+
     // MARK: - Public Methods
-    
+
     public func validateWageInput() {
         guard !wageText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             wageValidationState = .invalid("Please enter a valid hourly wage.")
             return
         }
-        
+
         guard let wage = Double(wageText), wage > 0 else {
             if wageText.contains(where: { !$0.isNumber && $0 != "." && $0 != "," }) {
                 wageValidationState = .invalid("Please enter a valid number.")
@@ -278,43 +288,43 @@ public class WageEntryViewModel: ObservableObject {
             }
             return
         }
-        
+
         // Additional validation for reasonable wage ranges
         if wage > 10000 {
             wageValidationState = .invalid("Wage seems unusually high. Please verify.")
             return
         }
-        
+
         wageValidationState = .valid
     }
-    
+
     public func selectCurrency(_ currency: Currency) {
         guard Currency.supportedCurrencies.contains(where: { $0.code == currency.code }) else {
             showError("Unsupported currency. Please choose a different code.")
             return
         }
-        
+
         selectedCurrency = currency
     }
-    
+
     public func selectPeriod(_ period: PayPeriod) {
         selectedPeriod = period
     }
-    
+
     public func saveWage() {
         validateWageInput()
-        
+
         guard case .valid = wageValidationState else {
             return
         }
-        
+
         guard let wageAmount = Double(wageText) else {
             showError("Invalid wage amount.")
             return
         }
-        
+
         isLoading = true
-        
+
         Task {
             do {
                 let wage = Wage(
@@ -322,15 +332,15 @@ public class WageEntryViewModel: ObservableObject {
                     currency: selectedCurrency.code,
                     period: selectedPeriod
                 )
-                
+
                 try KeychainManager.shared.saveWage(wage)
-                
+
                 await MainActor.run {
                     isLoading = false
                     // Trigger success flow (e.g., dismiss or navigate)
                     NotificationCenter.default.post(name: .wageDidSave, object: wage)
                 }
-                
+
             } catch {
                 await MainActor.run {
                     isLoading = false
@@ -339,17 +349,18 @@ public class WageEntryViewModel: ObservableObject {
             }
         }
     }
-    
+
     // MARK: - Private Methods
-    
+
     private func setupDefaultCurrency() {
         // Pre-fill currency based on user's locale
         if let localeCode = Locale.current.currencyCode,
-           let currency = Currency.supportedCurrencies.first(where: { $0.code == localeCode }) {
+           let currency = Currency.supportedCurrencies.first(where: { $0.code == localeCode })
+        {
             selectedCurrency = currency
         }
     }
-    
+
     private func showError(_ message: String) {
         errorMessage = message
         showingError = true
@@ -357,10 +368,11 @@ public class WageEntryViewModel: ObservableObject {
 }
 
 // MARK: - Validation State
+
 public enum ValidationState: Equatable {
     case valid
     case invalid(String)
-    
+
     var borderColor: Color {
         switch self {
         case .valid:
@@ -372,18 +384,19 @@ public enum ValidationState: Equatable {
 }
 
 // MARK: - Currency Button
+
 private struct CurrencyButton: View {
     let currency: Currency
     let isSelected: Bool
     let action: () -> Void
-    
+
     var body: some View {
         Button(action: action) {
             VStack(spacing: 4) {
                 Text(currency.symbol)
                     .font(.title3)
                     .fontWeight(.medium)
-                
+
                 Text(currency.code)
                     .font(.caption)
                     .fontWeight(.medium)
@@ -398,19 +411,20 @@ private struct CurrencyButton: View {
 }
 
 // MARK: - Period Button
+
 private struct PeriodButton: View {
     let period: PayPeriod
     let isSelected: Bool
     let isProminent: Bool
     let action: () -> Void
-    
+
     init(period: PayPeriod, isSelected: Bool, isProminent: Bool = false, action: @escaping () -> Void) {
         self.period = period
         self.isSelected = isSelected
         self.isProminent = isProminent
         self.action = action
     }
-    
+
     var body: some View {
         Button(action: action) {
             HStack {
@@ -419,7 +433,7 @@ private struct PeriodButton: View {
                         Text(period.displayName)
                             .font(isProminent ? .subheadline : .subheadline)
                             .fontWeight(isProminent ? .semibold : .medium)
-                        
+
                         if isProminent {
                             Text("Recommended")
                                 .font(.caption2)
@@ -431,14 +445,14 @@ private struct PeriodButton: View {
                                 .clipShape(Capsule())
                         }
                     }
-                    
+
                     Text(period.description)
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
-                
+
                 Spacer()
-                
+
                 if isSelected {
                     Image(systemName: "checkmark.circle.fill")
                         .foregroundColor(.blue)
@@ -446,9 +460,9 @@ private struct PeriodButton: View {
             }
             .padding(isProminent ? 16 : 12)
             .background(
-                isProminent ? 
-                    .regularMaterial : 
-                    .thinMaterial, 
+                isProminent ?
+                    .regularMaterial :
+                    .thinMaterial,
                 in: RoundedRectangle(cornerRadius: isProminent ? 12 : 8)
             )
             .overlay(
@@ -461,17 +475,18 @@ private struct PeriodButton: View {
 }
 
 // MARK: - Currency Model
+
 public struct Currency: Codable, Equatable {
     public let code: String
     public let symbol: String
     public let name: String
-    
+
     public init(code: String, symbol: String, name: String) {
         self.code = code
         self.symbol = symbol
         self.name = name
     }
-    
+
     public static let supportedCurrencies: [Currency] = [
         Currency(code: "EUR", symbol: "€", name: "Euro"),
         Currency(code: "USD", symbol: "$", name: "US Dollar"),
@@ -479,20 +494,21 @@ public struct Currency: Codable, Equatable {
         Currency(code: "JPY", symbol: "¥", name: "Japanese Yen"),
         Currency(code: "CHF", symbol: "CHF", name: "Swiss Franc"),
         Currency(code: "CAD", symbol: "C$", name: "Canadian Dollar"),
-        Currency(code: "AUD", symbol: "A$", name: "Australian Dollar")
+        Currency(code: "AUD", symbol: "A$", name: "Australian Dollar"),
     ]
-    
+
     public static let defaultCurrency = supportedCurrencies[0] // EUR
 }
 
 // MARK: - Pay Period Model
+
 public enum PayPeriod: String, CaseIterable, Codable {
-    case hourly = "hourly"
-    case daily = "daily"
-    case weekly = "weekly"
-    case monthly = "monthly"
-    case yearly = "yearly"
-    
+    case hourly
+    case daily
+    case weekly
+    case monthly
+    case yearly
+
     public var displayName: String {
         switch self {
         case .hourly: return "Hourly"
@@ -502,7 +518,7 @@ public enum PayPeriod: String, CaseIterable, Codable {
         case .yearly: return "Yearly"
         }
     }
-    
+
     public var description: String {
         switch self {
         case .hourly: return "Per hour worked"
@@ -512,7 +528,7 @@ public enum PayPeriod: String, CaseIterable, Codable {
         case .yearly: return "Annual salary"
         }
     }
-    
+
     public var hoursMultiplier: Double {
         switch self {
         case .hourly: return 1.0
@@ -525,15 +541,16 @@ public enum PayPeriod: String, CaseIterable, Codable {
 }
 
 // MARK: - Notification Names
+
 extension Notification.Name {
     static let wageDidSave = Notification.Name("wageDidSave")
 }
 
 // MARK: - Preview
+
 @available(iOS 15.0, *)
 struct WageEntryView_Previews: PreviewProvider {
     static var previews: some View {
         WageEntryView()
     }
 }
-

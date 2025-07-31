@@ -1,29 +1,30 @@
-import SwiftUI
 import CalcCore
 import HistoryStore
+import SwiftUI
 
 // MARK: - Wage Onboarding View
+
 @available(iOS 15.0, *)
 public struct WageOnboardingView: View {
     @StateObject private var viewModel = WageOnboardingViewModel()
     @Environment(\.dismiss) private var dismiss
-    
+
     public init() {}
-    
+
     public var body: some View {
         NavigationView {
             ZStack {
                 // Glass-morphism background
                 Color.black.opacity(0.1)
                     .ignoresSafeArea()
-                
+
                 VStack(spacing: 32) {
                     headerSection
                     wageInputSection
                     periodSelectionSection
                     currencySelectionSection
                     continueButton
-                    
+
                     Spacer()
                 }
                 .padding(.horizontal, 24)
@@ -35,31 +36,31 @@ public struct WageOnboardingView: View {
             ThankYouModalView(workMinutes: viewModel.appCostWorkTime)
         }
     }
-    
+
     private var headerSection: some View {
         VStack(spacing: 16) {
             Image(systemName: "clock.fill")
                 .font(.system(size: 64))
                 .foregroundColor(.blue)
-            
+
             Text("Welcome to LifeMeter")
                 .font(.largeTitle)
                 .fontWeight(.bold)
                 .multilineTextAlignment(.center)
-            
+
             Text("Convert any price into the time you work to afford it")
                 .font(.body)
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
         }
     }
-    
+
     private var wageInputSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Your take-home wage")
                 .font(.headline)
                 .fontWeight(.semibold)
-            
+
             HStack {
                 TextField("0", text: $viewModel.wageInput)
                     .keyboardType(.decimalPad)
@@ -69,7 +70,7 @@ public struct WageOnboardingView: View {
                         RoundedRectangle(cornerRadius: 16)
                             .fill(.regularMaterial)
                     )
-                
+
                 Text(viewModel.selectedCurrency)
                     .font(.system(size: 24, weight: .medium))
                     .foregroundColor(.secondary)
@@ -77,13 +78,13 @@ public struct WageOnboardingView: View {
             }
         }
     }
-    
+
     private var periodSelectionSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Pay period")
                 .font(.headline)
                 .fontWeight(.semibold)
-            
+
             HStack(spacing: 12) {
                 ForEach(PayPeriod.allCases, id: \.self) { period in
                     Button(action: {
@@ -104,13 +105,13 @@ public struct WageOnboardingView: View {
             }
         }
     }
-    
+
     private var currencySelectionSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Currency")
                 .font(.headline)
                 .fontWeight(.semibold)
-            
+
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 12) {
                     ForEach(Array(CurrencyUtilities.supportedCurrencies.keys.sorted()), id: \.self) { currency in
@@ -137,7 +138,7 @@ public struct WageOnboardingView: View {
             }
         }
     }
-    
+
     private var continueButton: some View {
         Button(action: {
             viewModel.saveWageAndShowThankYou()
@@ -158,40 +159,41 @@ public struct WageOnboardingView: View {
 }
 
 // MARK: - Thank You Modal
+
 @available(iOS 15.0, *)
 struct ThankYouModalView: View {
     let workMinutes: Double
     @Environment(\.dismiss) private var dismiss
-    
+
     var body: some View {
         VStack(spacing: 32) {
             Spacer()
-            
+
             Image(systemName: "heart.fill")
                 .font(.system(size: 80))
                 .foregroundColor(.red)
-            
+
             VStack(spacing: 16) {
                 Text("Thank You!")
                     .font(.largeTitle)
                     .fontWeight(.bold)
-                
+
                 Text("You worked")
                     .font(.title2)
                     .foregroundColor(.secondary)
-                
+
                 Text(ConversionEngine.formatWorkTime(workMinutes))
                     .font(.system(size: 48, weight: .bold, design: .rounded))
                     .foregroundColor(.blue)
-                
+
                 Text("to own LifeMeter")
                     .font(.title2)
                     .foregroundColor(.secondary)
             }
             .multilineTextAlignment(.center)
-            
+
             Spacer()
-            
+
             Button(action: {
                 dismiss()
             }) {
@@ -214,12 +216,13 @@ struct ThankYouModalView: View {
 }
 
 // MARK: - Pay Period Enum
+
 public enum PayPeriod: String, CaseIterable {
-    case hourly = "hourly"
-    case daily = "daily"
-    case monthly = "monthly"
-    case yearly = "yearly"
-    
+    case hourly
+    case daily
+    case monthly
+    case yearly
+
     public var displayName: String {
         switch self {
         case .hourly: return "Hourly"
@@ -228,22 +231,22 @@ public enum PayPeriod: String, CaseIterable {
         case .yearly: return "Yearly"
         }
     }
-    
+
     public var hoursMultiplier: Double {
         switch self {
         case .hourly: return 1.0
-        case .daily: return 8.0  // Assuming 8-hour workday
-        case .monthly: return 160.0  // Assuming 20 working days * 8 hours
-        case .yearly: return 2080.0  // Assuming 52 weeks * 40 hours
+        case .daily: return 8.0 // Assuming 8-hour workday
+        case .monthly: return 160.0 // Assuming 20 working days * 8 hours
+        case .yearly: return 2080.0 // Assuming 52 weeks * 40 hours
         }
     }
 }
 
 // MARK: - Preview
+
 @available(iOS 15.0, *)
 struct WageOnboardingView_Previews: PreviewProvider {
     static var previews: some View {
         WageOnboardingView()
     }
 }
-

@@ -1,29 +1,32 @@
 import Foundation
 
 // MARK: - Shortcut Template Manager
+
 @available(iOS 17.0, *)
 public class ShortcutTemplate {
-    
     // MARK: - Singleton
+
     public static let shared = ShortcutTemplate()
-    
+
     // MARK: - Properties
+
     private let shortcutName = "LifeMeter Apple Pay Logger"
     private let shortcutIdentifier = "com.lifemeter.applepay.automation"
-    
+
     // MARK: - Initialization
+
     private init() {}
-    
+
     // MARK: - Public Methods
-    
+
     /// Generate the shortcut template as a dictionary
     public func generateTemplate() -> [String: Any] {
         return [
             "WFWorkflowMinimumClientVersion": 1113,
             "WFWorkflowMinimumClientVersionString": "17.0",
             "WFWorkflowIcon": [
-                "WFWorkflowIconStartColor": 431817727,
-                "WFWorkflowIconGlyphNumber": 61440
+                "WFWorkflowIconStartColor": 431_817_727,
+                "WFWorkflowIconGlyphNumber": 61440,
             ],
             "WFWorkflowClientVersion": "2622.0.2",
             "WFWorkflowOutputContentItemClasses": [],
@@ -46,15 +49,15 @@ public class ShortcutTemplate {
                 "WFRichTextContentItem",
                 "WFSafariWebPageContentItem",
                 "WFStringContentItem",
-                "WFURLContentItem"
+                "WFURLContentItem",
             ],
             "WFWorkflowImportQuestions": [],
             "WFWorkflowTypes": ["NCWidget", "WatchKit"],
             "WFQuickActionSurfaces": [],
-            "WFWorkflowHasShortcutInputVariables": false
+            "WFWorkflowHasShortcutInputVariables": false,
         ]
     }
-    
+
     /// Generate the actions array for the shortcut
     private func generateActions() -> [[String: Any]] {
         return [
@@ -62,10 +65,10 @@ public class ShortcutTemplate {
             [
                 "WFWorkflowActionIdentifier": "is.workflow.actions.detect.transaction",
                 "WFWorkflowActionParameters": [
-                    "WFTransactionSource": "ApplePay"
-                ]
+                    "WFTransactionSource": "ApplePay",
+                ],
             ],
-            
+
             // Action 2: Extract Amount
             [
                 "WFWorkflowActionIdentifier": "is.workflow.actions.getvalueforkey",
@@ -74,12 +77,12 @@ public class ShortcutTemplate {
                     "WFInput": [
                         "WFActionOutput": [
                             "OutputUUID": "transaction-data",
-                            "Type": "ActionOutput"
-                        ]
-                    ]
-                ]
+                            "Type": "ActionOutput",
+                        ],
+                    ],
+                ],
             ],
-            
+
             // Action 3: Extract Currency
             [
                 "WFWorkflowActionIdentifier": "is.workflow.actions.getvalueforkey",
@@ -88,12 +91,12 @@ public class ShortcutTemplate {
                     "WFInput": [
                         "WFActionOutput": [
                             "OutputUUID": "transaction-data",
-                            "Type": "ActionOutput"
-                        ]
-                    ]
-                ]
+                            "Type": "ActionOutput",
+                        ],
+                    ],
+                ],
             ],
-            
+
             // Action 4: Extract Merchant (Optional)
             [
                 "WFWorkflowActionIdentifier": "is.workflow.actions.getvalueforkey",
@@ -102,12 +105,12 @@ public class ShortcutTemplate {
                     "WFInput": [
                         "WFActionOutput": [
                             "OutputUUID": "transaction-data",
-                            "Type": "ActionOutput"
-                        ]
-                    ]
-                ]
+                            "Type": "ActionOutput",
+                        ],
+                    ],
+                ],
             ],
-            
+
             // Action 5: Extract Card Name (Optional)
             [
                 "WFWorkflowActionIdentifier": "is.workflow.actions.getvalueforkey",
@@ -116,12 +119,12 @@ public class ShortcutTemplate {
                     "WFInput": [
                         "WFActionOutput": [
                             "OutputUUID": "transaction-data",
-                            "Type": "ActionOutput"
-                        ]
-                    ]
-                ]
+                            "Type": "ActionOutput",
+                        ],
+                    ],
+                ],
             ],
-            
+
             // Action 6: Run LifeMeter Intent
             [
                 "WFWorkflowActionIdentifier": "com.lifemeter.app.LogTransactionIntent",
@@ -129,42 +132,42 @@ public class ShortcutTemplate {
                     "amount": [
                         "WFActionOutput": [
                             "OutputUUID": "amount-value",
-                            "Type": "ActionOutput"
-                        ]
+                            "Type": "ActionOutput",
+                        ],
                     ],
                     "currency": [
                         "WFActionOutput": [
                             "OutputUUID": "currency-value",
-                            "Type": "ActionOutput"
-                        ]
+                            "Type": "ActionOutput",
+                        ],
                     ],
                     "merchant": [
                         "WFActionOutput": [
                             "OutputUUID": "merchant-value",
-                            "Type": "ActionOutput"
-                        ]
+                            "Type": "ActionOutput",
+                        ],
                     ],
                     "cardName": [
                         "WFActionOutput": [
                             "OutputUUID": "card-name-value",
-                            "Type": "ActionOutput"
-                        ]
-                    ]
-                ]
-            ]
+                            "Type": "ActionOutput",
+                        ],
+                    ],
+                ],
+            ],
         ]
     }
-    
+
     /// Export shortcut template to file
     public func exportTemplate() -> URL? {
         let template = generateTemplate()
-        
+
         guard let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
             return nil
         }
-        
+
         let shortcutURL = documentsPath.appendingPathComponent("\(shortcutName).shortcut")
-        
+
         do {
             let data = try PropertyListSerialization.data(fromPropertyList: template, format: .binary, options: 0)
             try data.write(to: shortcutURL)
@@ -174,23 +177,23 @@ public class ShortcutTemplate {
             return nil
         }
     }
-    
+
     /// Generate deep link URL for importing the shortcut
     public func generateImportURL() -> URL? {
         guard let templateURL = exportTemplate() else { return nil }
-        
+
         // Create shortcuts import URL
         var components = URLComponents()
         components.scheme = "shortcuts"
         components.host = "import-shortcut"
         components.queryItems = [
             URLQueryItem(name: "name", value: shortcutName),
-            URLQueryItem(name: "url", value: templateURL.absoluteString)
+            URLQueryItem(name: "url", value: templateURL.absoluteString),
         ]
-        
+
         return components.url
     }
-    
+
     /// Generate LifeMeter deep link for automation setup
     public func generateLifeMeterDeepLink() -> URL? {
         var components = URLComponents()
@@ -198,25 +201,25 @@ public class ShortcutTemplate {
         components.host = "add-applepay-automation"
         components.queryItems = [
             URLQueryItem(name: "shortcut", value: shortcutName),
-            URLQueryItem(name: "identifier", value: shortcutIdentifier)
+            URLQueryItem(name: "identifier", value: shortcutIdentifier),
         ]
-        
+
         return components.url
     }
 }
 
 // MARK: - Shortcut Configuration
+
 @available(iOS 17.0, *)
-extension ShortcutTemplate {
-    
+public extension ShortcutTemplate {
     /// Configuration for the Apple Pay automation
-    public struct AutomationConfig {
+    struct AutomationConfig {
         public let triggerType: String = "Transaction"
         public let cardTypes: [String] = ["All"]
         public let runImmediately: Bool = true
         public let askBeforeRunning: Bool = false
         public let notifyWhenRun: Bool = false
-        
+
         public var description: String {
             return """
             This automation will:
@@ -226,7 +229,7 @@ extension ShortcutTemplate {
             • Save the transaction to your LifeMeter history
             """
         }
-        
+
         public var setupInstructions: String {
             return """
             1. Tap "Add Automation" below
@@ -234,58 +237,59 @@ extension ShortcutTemplate {
             3. Accept the pre-configured automation
             4. Make sure "Ask Before Running" is OFF
             5. Tap "Done" to activate
-            
+
             Next time you pay with Apple Pay, LifeMeter will automatically show how many minutes you worked for that purchase!
             """
         }
     }
-    
-    public static let automationConfig = AutomationConfig()
+
+    static let automationConfig = AutomationConfig()
 }
 
 // MARK: - Shortcut Validation
+
 @available(iOS 17.0, *)
-extension ShortcutTemplate {
-    
+public extension ShortcutTemplate {
     /// Validate that the shortcut template is properly formatted
-    public func validateTemplate() -> Bool {
+    func validateTemplate() -> Bool {
         let template = generateTemplate()
-        
+
         // Check required keys
         guard template["WFWorkflowActions"] is [[String: Any]],
               template["WFWorkflowMinimumClientVersion"] is Int,
-              template["WFWorkflowClientVersion"] is String else {
+              template["WFWorkflowClientVersion"] is String
+        else {
             return false
         }
-        
+
         // Validate actions
         guard let actions = template["WFWorkflowActions"] as? [[String: Any]],
-              !actions.isEmpty else {
+              !actions.isEmpty
+        else {
             return false
         }
-        
+
         // Check that LifeMeter intent action exists
         let hasLifeMeterIntent = actions.contains { action in
             guard let identifier = action["WFWorkflowActionIdentifier"] as? String else { return false }
             return identifier == "com.lifemeter.app.LogTransactionIntent"
         }
-        
+
         return hasLifeMeterIntent
     }
-    
+
     /// Test the shortcut with sample data
-    public func testWithSampleData() -> Bool {
+    func testWithSampleData() -> Bool {
         let sampleTransaction = [
             "amount": 4.50,
             "currency": "EUR",
             "merchant": "Coffee Shop",
-            "cardName": "Apple Card"
+            "cardName": "Apple Card",
         ]
-        
+
         // This would normally test the actual shortcut execution
         // For now, just validate the data structure
         return sampleTransaction["amount"] is Double &&
-               sampleTransaction["currency"] is String
+            sampleTransaction["currency"] is String
     }
 }
-
