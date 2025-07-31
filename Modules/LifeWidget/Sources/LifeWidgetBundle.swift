@@ -12,6 +12,9 @@ struct LifeWidgetBundle: WidgetBundle {
     var body: some Widget {
         LifeWidget()
         LifeLockScreenWidget()
+        if #available(iOS 17.0, *) {
+            CatBalanceWidget()
+        }
     }
 }
 
