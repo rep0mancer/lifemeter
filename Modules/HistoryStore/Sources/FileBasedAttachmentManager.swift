@@ -21,7 +21,9 @@ public class FileBasedAttachmentManager {
 
     private init() {
         // Create attachments directory in Documents
-        let documentsDirectory = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first!
+        guard let documentsDirectory = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first else {
+            fatalError("Unable to locate documents directory")
+        }
         attachmentsDirectory = documentsDirectory.appendingPathComponent("Attachments", isDirectory: true)
 
         createAttachmentsDirectoryIfNeeded()
@@ -325,11 +327,11 @@ public class AttachmentMigrationHelper {
                 result.entriesWithBothFormats += 1
             } else if entry.photoData != nil {
                 result.entriesWithBinaryData += 1
-            } else if entry.attachmentURL != nil {
+            } else if let attachmentURL = entry.attachmentURL {
                 result.entriesWithFileAttachments += 1
 
                 // Validate file exists
-                if FileBasedAttachmentManager.shared.attachmentExists(at: entry.attachmentURL!) {
+                if FileBasedAttachmentManager.shared.attachmentExists(at: attachmentURL) {
                     result.validFileAttachments += 1
                 } else {
                     result.invalidFileAttachments += 1
@@ -426,10 +428,18 @@ public extension FileBasedAttachmentManager {
                 }
 
                 if let creationDate = resourceValues.creationDate {
-                    if oldestDate == nil || creationDate < oldestDate! {
+                    if let currentOldest = oldestDate {
+                        if creationDate < currentOldest {
+                            oldestDate = creationDate
+                        }
+                    } else {
                         oldestDate = creationDate
                     }
-                    if newestDate == nil || creationDate > newestDate! {
+                    if let currentNewest = newestDate {
+                        if creationDate > currentNewest {
+                            newestDate = creationDate
+                        }
+                    } else {
                         newestDate = creationDate
                     }
                 }
