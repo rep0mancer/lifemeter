@@ -155,7 +155,7 @@ public class BiometricAuthenticationGate: ObservableObject {
 
     private func logAuthenticationEvent(_ event: AuthenticationEvent, details: String? = nil) {
         let timestamp = ISO8601DateFormatter().string(from: Date())
-        let message = details != nil ? "\(event.rawValue) - \(details!)" : event.rawValue
+        let message = event.rawValue + (details.map { " - \($0)" } ?? "")
 
         #if DEBUG
             print("🔐 Auth Event [\(timestamp)]: \(message)")
