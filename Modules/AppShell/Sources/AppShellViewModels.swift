@@ -160,8 +160,8 @@ public class SettingsViewModel: ObservableObject {
             #if DEBUG
                 os_log(
                     .error,
-                    "Failed to clear data: %{private}@",
                     log: .appShell,
+                    "Failed to clear data: %{private}@",
                     String(describing: error)
                 )
             #endif
