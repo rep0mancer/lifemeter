@@ -1,13 +1,15 @@
 import Foundation
 import CoreData
 import CloudKit
+import os.log
 
 // MARK: - Core Data Stack
 @available(iOS 15.0, *)
 public class DataController: ObservableObject {
     public static let shared = DataController()
-    
+
     public let container: NSPersistentCloudKitContainer
+    @Published public var migrationError: Error?
     
     private init() {
         container = NSPersistentCloudKitContainer(name: "LifeMeterModel")
@@ -23,14 +25,49 @@ public class DataController: ObservableObject {
             containerIdentifier: "iCloud.com.lifemeter.app"
         )
         
-        container.loadPersistentStores { _, error in
-            if let error = error {
-                print("Core Data failed to load: \(error.localizedDescription)")
-            }
+        do {
+            try loadStores(description: description)
+        } catch {
+            migrationError = error
         }
-        
+
         container.viewContext.automaticallyMergesChangesFromParent = true
         container.viewContext.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
+    }
+
+    // MARK: - Persistent Store Loading
+    private func loadStores(description: NSPersistentStoreDescription) throws {
+        var loadError: Error?
+        let group = DispatchGroup()
+        group.enter()
+        container.loadPersistentStores { _, error in
+            loadError = error
+            group.leave()
+        }
+        group.wait()
+
+        if let error = loadError {
+            moveCorruptedStore(originalURL: description.url)
+            os_log(.fault, "Failed to load persistent store: %{public}@", error.localizedDescription)
+            throw error
+        }
+    }
+
+    private func moveCorruptedStore(originalURL: URL?) {
+        guard let originalURL else { return }
+        let fileManager = FileManager.default
+        let supportDir = fileManager.homeDirectoryForCurrentUser
+            .appendingPathComponent("Library/Application Support/LifeMeter/Corrupted", isDirectory: true)
+        do {
+            try fileManager.createDirectory(at: supportDir, withIntermediateDirectories: true)
+            let destination = supportDir.appendingPathComponent(originalURL.lastPathComponent)
+            if fileManager.fileExists(atPath: destination.path) {
+                try fileManager.removeItem(at: destination)
+            }
+            try fileManager.moveItem(at: originalURL, to: destination)
+        } catch {
+            os_log(.fault, "Failed to move corrupted store: %{public}@", error.localizedDescription)
+        }
     }
     
     public func save() {

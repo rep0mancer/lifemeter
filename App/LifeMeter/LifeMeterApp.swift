@@ -14,12 +14,16 @@ struct LifeMeterApp: App {
     // MARK: - App Body
     var body: some Scene {
         WindowGroup {
-            MainAppView()
-                .environment(\.managedObjectContext, dataController.container.viewContext)
-                .environmentObject(currencyStore)
-                .onAppear {
-                    setupApp()
-                }
+            if let error = dataController.migrationError {
+                FatalMigrationErrorView(error: error)
+            } else {
+                MainAppView()
+                    .environment(\.managedObjectContext, dataController.container.viewContext)
+                    .environmentObject(currencyStore)
+                    .onAppear {
+                        setupApp()
+                    }
+            }
         }
     }
     
