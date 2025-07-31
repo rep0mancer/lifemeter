@@ -158,7 +158,12 @@ public class SettingsViewModel: ObservableObject {
             DataController.shared.save()
         } catch {
             #if DEBUG
-                os_log(.error, "Failed to clear data: %{public}@", String(describing: error))
+                os_log(
+                    .error,
+                    log: .appShell,
+                    "Failed to clear data: %{private}@",
+                    String(describing: error)
+                )
             #endif
         }
     }
@@ -185,7 +190,12 @@ public class SettingsViewModel: ObservableObject {
             }
         } catch {
             #if DEBUG
-                os_log(.error, "Failed to load settings: %{public}@", String(describing: error))
+                os_log(
+                    .error,
+                    log: .appShell,
+                    "Failed to load settings: %{private}@",
+                    String(describing: error)
+                )
             #endif
         }
     }
@@ -204,7 +214,12 @@ public class SettingsViewModel: ObservableObject {
             DataController.shared.save()
         } catch {
             #if DEBUG
-                os_log(.error, "Failed to update settings: %{public}@", String(describing: error))
+                os_log(
+                    .error,
+                    log: .appShell,
+                    "Failed to update settings: %{private}@",
+                    String(describing: error)
+                )
             #endif
         }
     }
@@ -237,7 +252,12 @@ public class HistoryViewModel: ObservableObject {
             calculations = try context.fetch(request)
         } catch {
             #if DEBUG
-                os_log(.error, "Failed to load calculations: %{public}@", String(describing: error))
+                os_log(
+                    .error,
+                    log: .appShell,
+                    "Failed to load calculations: %{private}@",
+                    String(describing: error)
+                )
             #endif
             calculations = []
         }
@@ -269,7 +289,12 @@ public class HistoryViewModel: ObservableObject {
             loadCalculations()
         } catch {
             #if DEBUG
-                os_log(.error, "Failed to clear calculations: %{public}@", String(describing: error))
+                os_log(
+                    .error,
+                    log: .appShell,
+                    "Failed to clear calculations: %{private}@",
+                    String(describing: error)
+                )
             #endif
         }
     }

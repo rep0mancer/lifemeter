@@ -101,8 +101,13 @@ open class BaseViewModel: ObservableObject, CancellableStorage {
         cancellableManager.cancelAll()
 
         #if DEBUG
-            os_log(.debug, "\u{1F5D1} %{public}@ deinitialized, cancelled %{public}d subscriptions",
-                   String(describing: type(of: self)), cancellableManager.activeCancellablesCount)
+            os_log(
+                .debug,
+                log: .appShell,
+                "\u{1F5D1} %{public}@ deinitialized, cancelled %{public}d subscriptions",
+                String(describing: type(of: self)),
+                cancellableManager.activeCancellablesCount
+            )
         #endif
     }
 }
@@ -130,8 +135,13 @@ open class BaseViewController: UIViewController, CancellableStorage {
         cancellableManager.cancelAll()
 
         #if DEBUG
-            os_log(.debug, "\u{1F5D1} %{public}@ deinitialized, cancelled %{public}d subscriptions",
-                   String(describing: type(of: self)), cancellableManager.activeCancellablesCount)
+            os_log(
+                .debug,
+                log: .appShell,
+                "\u{1F5D1} %{public}@ deinitialized, cancelled %{public}d subscriptions",
+                String(describing: type(of: self)),
+                cancellableManager.activeCancellablesCount
+            )
         #endif
     }
 }
@@ -198,11 +208,26 @@ public class SubscriptionTracker {
     public func printSubscriptionReport() {
         let subscriptions = getAllActiveSubscriptions()
 
-        os_log(.info, "\u{1F4CA} Active Subscriptions Report:")
-        os_log(.info, "Total: %{public}d", totalActiveSubscriptions)
+        os_log(
+            .info,
+            "\u{1F4CA} Active Subscriptions Report:",
+            log: .appShell
+        )
+        os_log(
+            .info,
+            "Total: %{public}d",
+            log: .appShell,
+            totalActiveSubscriptions
+        )
 
         for (owner, count) in subscriptions.sorted(by: { $0.value > $1.value }) {
-            os_log(.info, "  %{public}@: %{public}d", owner, count)
+            os_log(
+                .info,
+                "  %{public}@: %{public}d",
+                log: .appShell,
+                owner,
+                count
+            )
         }
     }
 }
@@ -311,8 +336,12 @@ public class MemoryLeakDetector {
 
         #if DEBUG
             if totalSubscriptions > 50 { // Threshold for potential leak
-                os_log(.fault, "\u{26A0}\u{FE0F} Potential memory leak detected: %{public}d active subscriptions",
-                       totalSubscriptions)
+                os_log(
+                    .fault,
+                    "\u{26A0}\u{FE0F} Potential memory leak detected: %{public}d active subscriptions",
+                    log: .appShell,
+                    totalSubscriptions
+                )
                 SubscriptionTracker.shared.printSubscriptionReport()
             }
         #endif

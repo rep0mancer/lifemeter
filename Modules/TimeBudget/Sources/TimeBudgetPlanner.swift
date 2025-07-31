@@ -295,8 +295,13 @@ public class TimeBudgetPlanner: BaseViewModel {
         let timestamp = ISO8601DateFormatter().string(from: Date())
 
         #if DEBUG
-            os_log(.debug, "\u{1F4B0} Budget Event [%{public}@]: %{public}@ - %{public}@",
-                   timestamp, event.rawValue, details)
+            os_log(
+                .debug,
+                "\u{1F4B0} Budget Event [%{private}@]: %{public}@ - %{private}@",
+                timestamp,
+                event.rawValue,
+                details
+            )
         #endif
 
         // In production, log to analytics or audit trail

@@ -175,7 +175,11 @@ public class ShortcutTemplate {
             return shortcutURL
         } catch {
             #if DEBUG
-                os_log(.error, "Failed to export shortcut template: %{public}@", String(describing: error))
+                os_log(
+                    .error,
+                    "Failed to export shortcut template: %{private}@",
+                    String(describing: error)
+                )
             #endif
             return nil
         }
