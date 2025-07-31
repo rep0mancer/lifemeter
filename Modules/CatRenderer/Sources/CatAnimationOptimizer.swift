@@ -9,12 +9,16 @@ public class CatAnimationOptimizer {
     public static let shared = CatAnimationOptimizer()
     
     // MARK: - Properties
-    private var textureCache: [CatState: [SKTexture]] = [:]
+    private let atlas = SKTextureAtlas(named: "Cat")
+    private lazy var frames: [SKTexture] = (0..<atlas.textureNames.count)
+        .map { atlas.textureNamed("cat_\($0)") }
+    private let cache = NSCache<NSString, SKTexture>()
     private var isInitialized = false
     private let cacheQueue = DispatchQueue(label: "com.lifemeter.texture-cache", qos: .userInitiated)
     
     // MARK: - Initialization
     private init() {
+        cache.totalCostLimit = 20 * 1024 * 1024 // 20 MB
         initializeCache()
     }
     
@@ -22,12 +26,25 @@ public class CatAnimationOptimizer {
     
     /// Get cached textures for a cat state
     public func getTextures(for state: CatState) -> [SKTexture] {
-        return textureCache[state] ?? []
+        var textures: [SKTexture] = []
+        for i in 0..<state.frameCount {
+            let key = "cat_\(state.rawValue)_\(i)" as NSString
+            if let cached = cache.object(forKey: key) {
+                textures.append(cached)
+            } else {
+                let texture = atlas.textureNamed(key as String)
+                texture.filteringMode = .nearest
+                let cost = Int(texture.size().width * texture.size().height * 4)
+                cache.setObject(texture, forKey: key, cost: cost)
+                textures.append(texture)
+            }
+        }
+        return textures
     }
     
     /// Check if cache is ready
     public var isCacheReady: Bool {
-        return isInitialized && !textureCache.isEmpty
+        return isInitialized
     }
     
     /// Generate widget snapshot from cached textures
@@ -50,12 +67,15 @@ public class CatAnimationOptimizer {
             return
         }
         
-        cacheQueue.async {
-            self.loadAllTextures()
-            
-            DispatchQueue.main.async {
-                self.isInitialized = true
-                completion()
+        SKTextureAtlas.preloadTextureAtlases([atlas]) { [weak self] in
+            guard let self = self else { return }
+            self.cacheQueue.async {
+                self.loadAllTextures()
+
+                DispatchQueue.main.async {
+                    self.isInitialized = true
+                    completion()
+                }
             }
         }
     }
@@ -64,68 +84,39 @@ public class CatAnimationOptimizer {
     
     private func initializeCache() {
         // Initialize cache in background to avoid blocking main thread
-        cacheQueue.async {
-            self.loadAllTextures()
-            
-            DispatchQueue.main.async {
-                self.isInitialized = true
-                NotificationCenter.default.post(name: .catAnimationCacheReady, object: nil)
+        SKTextureAtlas.preloadTextureAtlases([atlas]) { [weak self] in
+            guard let self = self else { return }
+            self.cacheQueue.async {
+                self.loadAllTextures()
+
+                DispatchQueue.main.async {
+                    self.isInitialized = true
+                    NotificationCenter.default.post(name: .catAnimationCacheReady, object: nil)
+                }
             }
         }
     }
     
     private func loadAllTextures() {
         for state in CatState.allCases {
-            textureCache[state] = loadTexturesForState(state)
+            _ = loadTexturesForState(state)
         }
     }
     
     private func loadTexturesForState(_ state: CatState) -> [SKTexture] {
-        guard let spriteSheet = loadSpriteSheet(for: state) else {
-            return []
-        }
-        
         let frameCount = state.frameCount
-        let frameSize = state.frameSize
         var textures: [SKTexture] = []
-        
+
         for i in 0..<frameCount {
-            let x = CGFloat(i % state.framesPerRow) * frameSize.width
-            let y = CGFloat(i / state.framesPerRow) * frameSize.height
-            
-            let rect = CGRect(x: x, y: y, width: frameSize.width, height: frameSize.height)
-            let normalizedRect = CGRect(
-                x: rect.origin.x / spriteSheet.size.width,
-                y: rect.origin.y / spriteSheet.size.height,
-                width: rect.size.width / spriteSheet.size.width,
-                height: rect.size.height / spriteSheet.size.height
-            )
-            
-            let texture = SKTexture(rect: normalizedRect, in: SKTexture(image: spriteSheet))
-            texture.filteringMode = .nearest // Preserve pixel art quality
+            let name = "cat_\(state.rawValue)_\(i)"
+            let texture = atlas.textureNamed(name)
+            texture.filteringMode = .nearest
+            let cost = Int(texture.size().width * texture.size().height * 4)
+            cache.setObject(texture, forKey: name as NSString, cost: cost)
             textures.append(texture)
         }
-        
+
         return textures
-    }
-    
-    private func loadSpriteSheet(for state: CatState) -> UIImage? {
-        let bundle = Bundle.main
-        let imageName = state.spriteSheetName
-        
-        // Try loading from Assets catalog first
-        if let image = UIImage(named: imageName) {
-            return image
-        }
-        
-        // Try loading from bundle
-        if let path = bundle.path(forResource: imageName, ofType: "png"),
-           let image = UIImage(contentsOfFile: path) {
-            return image
-        }
-        
-        print("Warning: Could not load sprite sheet for \(state)")
-        return nil
     }
 }
 
@@ -136,29 +127,12 @@ public enum CatState: String, CaseIterable {
     case running = "run"
     case pouncing = "pounce"
     
-    var spriteSheetName: String {
-        return "cat_\(rawValue)_spritesheet"
-    }
-    
     var frameCount: Int {
         switch self {
         case .sleeping: return 4
         case .walking: return 8
         case .running: return 6
         case .pouncing: return 12
-        }
-    }
-    
-    var frameSize: CGSize {
-        return CGSize(width: 32, height: 32) // Standard pixel art size
-    }
-    
-    var framesPerRow: Int {
-        switch self {
-        case .sleeping: return 2
-        case .walking: return 4
-        case .running: return 3
-        case .pouncing: return 4
         }
     }
     
