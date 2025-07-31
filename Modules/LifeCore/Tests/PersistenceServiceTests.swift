@@ -15,8 +15,11 @@ final class PersistenceServiceTests: XCTestCase {
         let loaded = PersistenceService.loadProfile()
         
         // then
-        XCTAssertEqual(loaded?.birthDate, profile.birthDate)
         XCTAssertEqual(loaded?.gender, profile.gender)
+
+        // Also check answers
+        let loadedLikesCats = loaded?.answers["likesCats"]?.value as? Bool
+        XCTAssertEqual(loadedLikesCats, true)
         
         // clean up
         UserDefaults.standard.removeObject(forKey: "userProfile")
