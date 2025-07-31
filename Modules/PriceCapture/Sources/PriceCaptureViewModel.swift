@@ -168,7 +168,7 @@ public class PriceCaptureViewModel: ObservableObject {
         }
     }
 
-    private func performOCR(on image: UIImage, completion: @escaping (Result<String, Error>) -> Void) {
+    private func performOCR(on image: UIImage, completion: @escaping @Sendable (Result<String, Error>) -> Void) {
         guard let cgImage = image.cgImage else {
             completion(.failure(OCRError.invalidImage))
             return

@@ -3,6 +3,7 @@ import CoreData
 // swiftlint:disable force_unwrapping
 import Foundation
 import UIKit
+import os.log
 
 // MARK: - File-Based Attachment Manager
 
@@ -150,7 +151,10 @@ public class FileBasedAttachmentManager {
                 entry.attachmentURL = fileURL
                 entry.photoData = nil // Remove binary data
             } catch {
-                print("Failed to migrate attachment for entry \(calculationId): \(error)")
+                #if DEBUG
+                    os_log(.error, "Failed to migrate attachment for entry %{public}@: %{public}@",
+                           calculationId.uuidString, String(describing: error))
+                #endif
             }
         }
 
@@ -164,7 +168,10 @@ public class FileBasedAttachmentManager {
             do {
                 try fileManager.createDirectory(at: attachmentsDirectory, withIntermediateDirectories: true)
             } catch {
-                print("Failed to create attachments directory: \(error)")
+                #if DEBUG
+                    os_log(.error, "Failed to create attachments directory: %{public}@",
+                           String(describing: error))
+                #endif
             }
         }
     }
@@ -266,7 +273,9 @@ public extension HistoryEntry {
 public class AttachmentMigrationHelper {
     /// Perform migration from binary data to file-based storage
     public static func performMigration(context: NSManagedObjectContext) throws {
-        print("Starting attachment migration...")
+        #if DEBUG
+            os_log(.info, "Starting attachment migration...")
+        #endif
 
         let startTime = Date()
 
@@ -274,10 +283,14 @@ public class AttachmentMigrationHelper {
             try FileBasedAttachmentManager.shared.migrateBinaryDataToFiles(context: context)
 
             let duration = Date().timeIntervalSince(startTime)
-            print("Attachment migration completed in \(String(format: "%.2f", duration)) seconds")
+            #if DEBUG
+                os_log(.info, "Attachment migration completed in %{public}.2f seconds", duration)
+            #endif
 
         } catch {
-            print("Attachment migration failed: \(error)")
+            #if DEBUG
+                os_log(.error, "Attachment migration failed: %{public}@", String(describing: error))
+            #endif
             throw AttachmentError.migrationFailed(error)
         }
     }

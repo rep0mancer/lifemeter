@@ -230,7 +230,7 @@ public struct PriceCaptureView: View {
 
 @available(iOS 15.0, *)
 struct DocumentScannerView: UIViewControllerRepresentable {
-    let completion: (Result<[UIImage], Error>) -> Void
+    let completion: @Sendable (Result<[UIImage], Error>) -> Void
 
     func makeUIViewController(context: Context) -> VNDocumentCameraViewController {
         let scanner = VNDocumentCameraViewController()
@@ -245,9 +245,9 @@ struct DocumentScannerView: UIViewControllerRepresentable {
     }
 
     class Coordinator: NSObject, VNDocumentCameraViewControllerDelegate {
-        let completion: (Result<[UIImage], Error>) -> Void
+        let completion: @Sendable (Result<[UIImage], Error>) -> Void
 
-        init(completion: @escaping (Result<[UIImage], Error>) -> Void) {
+        init(completion: @escaping @Sendable (Result<[UIImage], Error>) -> Void) {
             self.completion = completion
         }
 
@@ -275,7 +275,7 @@ struct DocumentScannerView: UIViewControllerRepresentable {
 
 @available(iOS 15.0, *)
 struct ImagePickerView: UIViewControllerRepresentable {
-    let completion: (UIImage) -> Void
+    let completion: @Sendable (UIImage) -> Void
 
     func makeUIViewController(context: Context) -> UIImagePickerController {
         let picker = UIImagePickerController()
@@ -291,9 +291,9 @@ struct ImagePickerView: UIViewControllerRepresentable {
     }
 
     class Coordinator: NSObject, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
-        let completion: (UIImage) -> Void
+        let completion: @Sendable (UIImage) -> Void
 
-        init(completion: @escaping (UIImage) -> Void) {
+        init(completion: @escaping @Sendable (UIImage) -> Void) {
             self.completion = completion
         }
 

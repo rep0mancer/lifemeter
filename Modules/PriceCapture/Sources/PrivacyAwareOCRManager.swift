@@ -3,6 +3,7 @@ import Foundation
 import UIKit
 import Vision
 import VisionKit
+import os.log
 
 // MARK: - Privacy-Aware OCR Manager
 
@@ -50,7 +51,7 @@ public class PrivacyAwareOCRManager: NSObject {
     }
 
     /// Process image with privacy-aware OCR
-    public func processImage(_ image: UIImage, completion: @escaping (Result<OCRResult, PrivacyOCRError>) -> Void) {
+    public func processImage(_ image: UIImage, completion: @escaping @Sendable (Result<OCRResult, PrivacyOCRError>) -> Void) {
         // Ensure OCR is enabled
         guard privacySettings.isOCREnabled else {
             completion(.failure(.ocrDisabledByUser))
@@ -207,7 +208,7 @@ public class PrivacyAwareOCRManager: NSObject {
         cameraPermissionStatus = AVCaptureDevice.authorizationStatus(for: .video)
     }
 
-    private func requestCameraPermission(completion: @escaping (Bool) -> Void) {
+    private func requestCameraPermission(completion: @escaping @Sendable (Bool) -> Void) {
         AVCaptureDevice.requestAccess(for: .video) { granted in
             self.updateCameraPermissionStatus()
             self.logPrivacyEvent(.cameraPermissionRequested, details: "Permission \(granted ? "granted" : "denied")")
@@ -250,7 +251,7 @@ public class PrivacyAwareOCRManager: NSObject {
         viewController.present(scannerViewController, animated: true)
     }
 
-    private func performOCRProcessing(on image: UIImage, completion: @escaping (Result<OCRResult, PrivacyOCRError>) -> Void) {
+    private func performOCRProcessing(on image: UIImage, completion: @escaping @Sendable (Result<OCRResult, PrivacyOCRError>) -> Void) {
         guard let cgImage = image.cgImage else {
             completion(.failure(.imageProcessingFailed))
             return
@@ -356,7 +357,8 @@ public class PrivacyAwareOCRManager: NSObject {
         let timestamp = ISO8601DateFormatter().string(from: Date())
 
         #if DEBUG
-            print("🔒 Privacy Event [\(timestamp)]: \(event.rawValue) - \(details)")
+            os_log(.debug, "\u{1F512} Privacy Event [%{public}@]: %{public}@ - %{public}@",
+                   timestamp, event.rawValue, details)
         #endif
 
         // In production, log to privacy audit trail
@@ -469,7 +471,8 @@ public class PrivacySettings {
 
     private func logPrivacyEvent(_ event: PrivacyEvent, details: String) {
         #if DEBUG
-            print("🔒 Privacy Setting: \(event.rawValue) - \(details)")
+            os_log(.debug, "\u{1F512} Privacy Setting: %{public}@ - %{public}@",
+                   event.rawValue, details)
         #endif
     }
 }

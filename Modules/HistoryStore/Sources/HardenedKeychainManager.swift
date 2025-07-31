@@ -2,6 +2,7 @@
 import Foundation
 import LocalAuthentication
 import Security
+import os.log
 
 // MARK: - Hardened Keychain Manager
 
@@ -321,7 +322,8 @@ public class HardenedKeychainManager {
         let timestamp = ISO8601DateFormatter().string(from: Date())
 
         #if DEBUG
-            print("🔒 Security Event [\(timestamp)]: \(event.rawValue) - \(details)")
+            os_log(.debug, "\u{1F512} Security Event [%{public}@]: %{public}@ - %{public}@",
+                   timestamp, event.rawValue, details)
         #endif
 
         // In production, you might want to log to a secure audit trail

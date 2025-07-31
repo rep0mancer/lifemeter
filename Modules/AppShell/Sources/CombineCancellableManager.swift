@@ -1,5 +1,6 @@
 import Combine
 import Foundation
+import os.log
 
 // MARK: - Combine Cancellable Manager
 
@@ -100,7 +101,8 @@ open class BaseViewModel: ObservableObject, CancellableStorage {
         cancellableManager.cancelAll()
 
         #if DEBUG
-            print("🗑️ \(String(describing: type(of: self))) deinitialized, cancelled \(cancellableManager.activeCancellablesCount) subscriptions")
+            os_log(.debug, "\u{1F5D1} %{public}@ deinitialized, cancelled %{public}d subscriptions",
+                   String(describing: type(of: self)), cancellableManager.activeCancellablesCount)
         #endif
     }
 }
@@ -128,7 +130,8 @@ open class BaseViewController: UIViewController, CancellableStorage {
         cancellableManager.cancelAll()
 
         #if DEBUG
-            print("🗑️ \(String(describing: type(of: self))) deinitialized, cancelled \(cancellableManager.activeCancellablesCount) subscriptions")
+            os_log(.debug, "\u{1F5D1} %{public}@ deinitialized, cancelled %{public}d subscriptions",
+                   String(describing: type(of: self)), cancellableManager.activeCancellablesCount)
         #endif
     }
 }
@@ -195,11 +198,11 @@ public class SubscriptionTracker {
     public func printSubscriptionReport() {
         let subscriptions = getAllActiveSubscriptions()
 
-        print("📊 Active Subscriptions Report:")
-        print("Total: \(totalActiveSubscriptions)")
+        os_log(.info, "\u{1F4CA} Active Subscriptions Report:")
+        os_log(.info, "Total: %{public}d", totalActiveSubscriptions)
 
         for (owner, count) in subscriptions.sorted(by: { $0.value > $1.value }) {
-            print("  \(owner): \(count)")
+            os_log(.info, "  %{public}@: %{public}d", owner, count)
         }
     }
 }
@@ -250,8 +253,8 @@ public extension Publisher {
     func store<T: CancellableStorage>(
         in storage: T,
         owner: String? = nil,
-        receiveCompletion: @escaping (Subscribers.Completion<Self.Failure>) -> Void = { _ in },
-        receiveValue: @escaping (Self.Output) -> Void
+        receiveCompletion: @escaping @Sendable (Subscribers.Completion<Self.Failure>) -> Void = { _ in },
+        receiveValue: @escaping @Sendable (Self.Output) -> Void
     ) -> AnyCancellable {
         let ownerName = owner ?? String(describing: type(of: storage))
         let cancellable = sink(
@@ -308,7 +311,8 @@ public class MemoryLeakDetector {
 
         #if DEBUG
             if totalSubscriptions > 50 { // Threshold for potential leak
-                print("⚠️ Potential memory leak detected: \(totalSubscriptions) active subscriptions")
+                os_log(.fault, "\u{26A0}\u{FE0F} Potential memory leak detected: %{public}d active subscriptions",
+                       totalSubscriptions)
                 SubscriptionTracker.shared.printSubscriptionReport()
             }
         #endif

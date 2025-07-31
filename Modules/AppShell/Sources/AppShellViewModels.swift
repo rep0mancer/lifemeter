@@ -3,6 +3,7 @@ import Combine
 import CoreData
 import Foundation
 import HistoryStore
+import os.log
 
 // MARK: - Main App ViewModel
 
@@ -156,7 +157,9 @@ public class SettingsViewModel: ObservableObject {
             try context.execute(settingsDeleteRequest)
             DataController.shared.save()
         } catch {
-            print("Failed to clear data: \(error)")
+            #if DEBUG
+                os_log(.error, "Failed to clear data: %{public}@", String(describing: error))
+            #endif
         }
     }
 
@@ -181,7 +184,9 @@ public class SettingsViewModel: ObservableObject {
                 cloudSyncEnabled = userSettings.cloudSyncEnabled
             }
         } catch {
-            print("Failed to load settings: \(error)")
+            #if DEBUG
+                os_log(.error, "Failed to load settings: %{public}@", String(describing: error))
+            #endif
         }
     }
 
@@ -198,7 +203,9 @@ public class SettingsViewModel: ObservableObject {
 
             DataController.shared.save()
         } catch {
-            print("Failed to update settings: \(error)")
+            #if DEBUG
+                os_log(.error, "Failed to update settings: %{public}@", String(describing: error))
+            #endif
         }
     }
 }
@@ -229,7 +236,9 @@ public class HistoryViewModel: ObservableObject {
         do {
             calculations = try context.fetch(request)
         } catch {
-            print("Failed to load calculations: \(error)")
+            #if DEBUG
+                os_log(.error, "Failed to load calculations: %{public}@", String(describing: error))
+            #endif
             calculations = []
         }
     }
@@ -259,7 +268,9 @@ public class HistoryViewModel: ObservableObject {
             DataController.shared.save()
             loadCalculations()
         } catch {
-            print("Failed to clear calculations: \(error)")
+            #if DEBUG
+                os_log(.error, "Failed to clear calculations: %{public}@", String(describing: error))
+            #endif
         }
     }
 }

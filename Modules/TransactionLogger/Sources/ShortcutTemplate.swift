@@ -1,4 +1,5 @@
 import Foundation
+import os.log
 
 // MARK: - Shortcut Template Manager
 
@@ -173,7 +174,9 @@ public class ShortcutTemplate {
             try data.write(to: shortcutURL)
             return shortcutURL
         } catch {
-            print("Failed to export shortcut template: \(error)")
+            #if DEBUG
+                os_log(.error, "Failed to export shortcut template: %{public}@", String(describing: error))
+            #endif
             return nil
         }
     }

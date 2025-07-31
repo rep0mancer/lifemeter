@@ -2,6 +2,7 @@ import CalcCore
 import Foundation
 import HistoryStore
 import UserNotifications
+import os.log
 
 // MARK: - Transaction Logger
 
@@ -111,7 +112,9 @@ public class TransactionLogger: ObservableObject {
         do {
             try await notificationCenter.add(request)
         } catch {
-            print("Failed to post notification: \(error)")
+            #if DEBUG
+                os_log(.error, "Failed to post notification: %{public}@", String(describing: error))
+            #endif
         }
     }
 
@@ -148,7 +151,9 @@ public class TransactionLogger: ObservableObject {
 
             try await notificationCenter.add(request)
         } catch {
-            print("Failed to undo transaction: \(error)")
+            #if DEBUG
+                os_log(.error, "Failed to undo transaction: %{public}@", String(describing: error))
+            #endif
         }
     }
 

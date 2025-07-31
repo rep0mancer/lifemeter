@@ -2,6 +2,7 @@
 import Foundation
 import LocalAuthentication
 import SwiftUI
+import os.log
 
 // MARK: - Biometric Authentication Gate
 
@@ -158,7 +159,8 @@ public class BiometricAuthenticationGate: ObservableObject {
         let message = event.rawValue + (details.map { " - \($0)" } ?? "")
 
         #if DEBUG
-            print("🔐 Auth Event [\(timestamp)]: \(message)")
+            os_log(.debug, "\u{1F510} Auth Event [%{public}@]: %{public}@",
+                   timestamp, message)
         #endif
 
         // In production, log to security audit trail
