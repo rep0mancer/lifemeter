@@ -3,7 +3,7 @@ import LifeCore
 
 @MainActor
 final class LifeViewModel: ObservableObject {
-    @Published var profile: UserProfile
+    @Published private(set) var profile: UserProfile
     @Published private(set) var expectancy: Double = 0
     private let calc = LifeExpectancyCalculator()
 
