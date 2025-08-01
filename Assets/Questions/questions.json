@@ -1,0 +1,27 @@
+[
+  {
+    "id": "q1",
+    "text": "Do you enjoy using LifeMeter?",
+    "answerType": "bool"
+  },
+  {
+    "id": "q2",
+    "text": "How many purchases do you track weekly?",
+    "answerType": "int"
+  },
+  {
+    "id": "q3",
+    "text": "What is your average coffee price?",
+    "answerType": "double"
+  },
+  {
+    "id": "q4",
+    "text": "Preferred currency?",
+    "answerType": "string"
+  },
+  {
+    "id": "q5",
+    "text": "Would you recommend LifeMeter to friends?",
+    "answerType": "bool"
+  }
+]
