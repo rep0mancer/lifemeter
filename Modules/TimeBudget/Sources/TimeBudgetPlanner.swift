@@ -598,7 +598,10 @@ public class TimeBudgetCalculator {
         case .daily: return 24 * 60 * 60 // 1 day
         case .weekly: return 7 * 24 * 60 * 60 // 1 week
         case .monthly: return 30 * 24 * 60 * 60 // ~1 month
-        case .yearly: return 365 * 24 * 60 * 60 // ~1 year
+        case .yearly:
+            let now = Date()
+            let endDate = Calendar.current.date(byAdding: .year, value: 1, to: now) ?? now
+            return endDate.timeIntervalSince(now)
         }
     }
 }
