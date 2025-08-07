@@ -126,6 +126,8 @@ public enum CurrencyUtilities {
         "AUD": "A$",
     ]
 
+    public static let supportedCurrencyCodes: Set<String> = Set(supportedCurrencies.keys)
+
     /// Gets currency symbol for identifier
     /// - Parameter identifier: Currency identifier (e.g., "EUR")
     /// - Returns: Currency symbol (e.g., "€")

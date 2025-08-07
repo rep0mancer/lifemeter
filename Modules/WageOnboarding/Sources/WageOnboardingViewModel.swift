@@ -79,7 +79,7 @@ public class WageOnboardingViewModel: ObservableObject {
 
     private func loadInitialValues() {
         // Set default currency from locale
-        selectedCurrency = Locale.current.currency?.identifier ?? "EUR"
+        selectedCurrency = Locale.current.currencyCode ?? "EUR"
 
         // Load existing wage if available (for editing)
         if let existingWage = keychainManager.retrieveWage() {
