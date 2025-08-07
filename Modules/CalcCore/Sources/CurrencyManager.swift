@@ -13,7 +13,7 @@ public actor CurrencyManager {
     // MARK: - Properties
 
     private var selectedCurrencyValue: CurrencyCode = "EUR"
-    private var currencyContinuation: AsyncStream<CurrencyCode>.Continuation?
+    private var continuations: [UUID: AsyncStream<CurrencyCode>.Continuation] = [:]
 
     // MARK: - Initialization
 
@@ -26,12 +26,15 @@ public actor CurrencyManager {
     /// Current selected currency
     public var selectedCurrency: CurrencyCode { selectedCurrencyValue }
 
-    /// Async stream for selected currency changes (for UI bridges)
+    /// Async stream for selected currency changes (supports multiple subscribers)
     public nonisolated var selectedCurrencyStream: AsyncStream<CurrencyCode> {
-        AsyncStream { continuation in
-            Task { [weak continuation] in
-                guard let continuation else { return }
-                await self.registerContinuation(continuation)
+        let id = UUID()
+        return AsyncStream { continuation in
+            // Register inside actor and yield the current value immediately
+            Task { await self.addContinuation(id: id, continuation: continuation) }
+            // Ensure removal when this specific stream terminates
+            continuation.onTermination = { _ in
+                Task { await self.removeContinuation(id: id) }
             }
         }
     }
@@ -40,7 +43,10 @@ public actor CurrencyManager {
     public func setCurrency(_ currencyCode: CurrencyCode) {
         guard CurrencyUtilities.supportedCurrencyCodes.contains(currencyCode) else { return }
         selectedCurrencyValue = currencyCode
-        currencyContinuation?.yield(currencyCode)
+        // Broadcast to all active subscribers
+        for continuation in continuations.values {
+            continuation.yield(currencyCode)
+        }
         saveSelectedCurrency()
     }
 
@@ -91,12 +97,13 @@ public actor CurrencyManager {
         UserDefaults.standard.set(selectedCurrencyValue, forKey: "SelectedCurrency")
     }
 
-    private func registerContinuation(_ continuation: AsyncStream<CurrencyCode>.Continuation) {
-        currencyContinuation = continuation
-        continuation.onTermination = { [weak self] _ in
-            self?.currencyContinuation = nil
-        }
+    private func addContinuation(id: UUID, continuation: AsyncStream<CurrencyCode>.Continuation) {
+        continuations[id] = continuation
         continuation.yield(selectedCurrencyValue)
+    }
+
+    private func removeContinuation(id: UUID) {
+        continuations[id] = nil
     }
 
     /// Get currency from user's locale
