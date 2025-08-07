@@ -12,11 +12,8 @@ public actor CurrencyManager {
 
     // MARK: - Properties
 
-    @Published public var selectedCurrency: CurrencyCode = "EUR"
-
-    private let supportedCurrencyCodes: Set<String> = [
-        "EUR", "USD", "GBP", "JPY", "CHF", "CAD", "AUD",
-    ]
+    private var selectedCurrencyValue: CurrencyCode = "EUR"
+    private var currencyContinuation: AsyncStream<CurrencyCode>.Continuation?
 
     // MARK: - Initialization
 
@@ -26,16 +23,30 @@ public actor CurrencyManager {
 
     // MARK: - Public Methods
 
+    /// Current selected currency
+    public var selectedCurrency: CurrencyCode { selectedCurrencyValue }
+
+    /// Async stream for selected currency changes (for UI bridges)
+    public nonisolated var selectedCurrencyStream: AsyncStream<CurrencyCode> {
+        AsyncStream { continuation in
+            Task { [weak continuation] in
+                guard let continuation else { return }
+                await self.registerContinuation(continuation)
+            }
+        }
+    }
+
     /// Validate and set currency code
     public func setCurrency(_ currencyCode: CurrencyCode) {
-        guard supportedCurrencyCodes.contains(currencyCode) else { return }
-        selectedCurrency = currencyCode
+        guard CurrencyUtilities.supportedCurrencyCodes.contains(currencyCode) else { return }
+        selectedCurrencyValue = currencyCode
+        currencyContinuation?.yield(currencyCode)
         saveSelectedCurrency()
     }
 
     /// Get currency symbol for code
     public nonisolated func symbol(for currencyCode: String) -> String {
-        guard supportedCurrencyCodes.contains(currencyCode) else {
+        guard CurrencyUtilities.supportedCurrencyCodes.contains(currencyCode) else {
             return currencyCode // Fallback to code if unsupported
         }
 
@@ -45,12 +56,12 @@ public actor CurrencyManager {
     /// Check if currency code is supported
     public nonisolated func isSupported(_ currencyCode: String?) -> Bool {
         guard let code = currencyCode else { return false }
-        return supportedCurrencyCodes.contains(code)
+        return CurrencyUtilities.supportedCurrencyCodes.contains(code)
     }
 
     /// Get all supported currency codes
     public nonisolated var supportedCurrencies: [String] {
-        return Array(supportedCurrencyCodes).sorted()
+        return Array(CurrencyUtilities.supportedCurrencyCodes).sorted()
     }
 
     /// Validate currency code before conversion
@@ -59,35 +70,43 @@ public actor CurrencyManager {
             throw CurrencyError.invalidCurrencyCode("Currency code is required for conversion")
         }
 
-        guard supportedCurrencyCodes.contains(code) else {
+        guard CurrencyUtilities.supportedCurrencyCodes.contains(code) else {
             throw CurrencyError.unsupportedCurrency("Unsupported currency. Please choose a different code.")
         }
-    }
-
-    /// Get currency from user's locale
-    public nonisolated func getLocaleCurrency() -> String? {
-        guard let localeCode = Locale.current.currencyCode,
-              supportedCurrencyCodes.contains(localeCode)
-        else {
-            return nil
-        }
-        return localeCode
     }
 
     // MARK: - Private Methods
 
     private func loadSelectedCurrency() {
         if let saved = UserDefaults.standard.string(forKey: "SelectedCurrency"),
-           supportedCurrencyCodes.contains(saved)
+           CurrencyUtilities.supportedCurrencyCodes.contains(saved)
         {
-            selectedCurrency = saved
+            selectedCurrencyValue = saved
         } else if let localeCode = getLocaleCurrency() {
-            selectedCurrency = localeCode
+            selectedCurrencyValue = localeCode
         }
     }
 
     private func saveSelectedCurrency() {
-        UserDefaults.standard.set(selectedCurrency, forKey: "SelectedCurrency")
+        UserDefaults.standard.set(selectedCurrencyValue, forKey: "SelectedCurrency")
+    }
+
+    private func registerContinuation(_ continuation: AsyncStream<CurrencyCode>.Continuation) {
+        currencyContinuation = continuation
+        continuation.onTermination = { [weak self] _ in
+            self?.currencyContinuation = nil
+        }
+        continuation.yield(selectedCurrencyValue)
+    }
+
+    /// Get currency from user's locale
+    private func getLocaleCurrency() -> String? {
+        guard let localeCode = Locale.current.currencyCode,
+              CurrencyUtilities.supportedCurrencyCodes.contains(localeCode)
+        else {
+            return nil
+        }
+        return localeCode
     }
 }
 

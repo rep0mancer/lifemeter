@@ -133,14 +133,14 @@ public class UserSettings: NSManagedObject {
         lastModified = Date()
         hasCompletedOnboarding = false
         cloudSyncEnabled = true
-        currency = Locale.current.currency?.identifier ?? "EUR"
+        currency = Locale.current.currencyCode ?? "EUR"
     }
 }
 
 // MARK: - Core Data Extensions
 
 public extension Calculation {
-    internal static func fetchRequest() -> NSFetchRequest<Calculation> {
+    public static func fetchRequest() -> NSFetchRequest<Calculation> {
         return NSFetchRequest<Calculation>(entityName: "Calculation")
     }
 
@@ -158,7 +158,7 @@ public extension Calculation {
 }
 
 extension UserSettings {
-    static func fetchRequest() -> NSFetchRequest<UserSettings> {
+    public static func fetchRequest() -> NSFetchRequest<UserSettings> {
         return NSFetchRequest<UserSettings>(entityName: "UserSettings")
     }
 

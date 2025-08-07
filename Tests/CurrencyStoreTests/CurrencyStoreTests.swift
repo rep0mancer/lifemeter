@@ -5,10 +5,18 @@ import XCTest
 @MainActor
 final class CurrencyStoreTests: XCTestCase {
     actor InMemoryCurrencyManager: CurrencyManaging {
-        @Published var selectedCurrency: CurrencyCode = "USD"
-        var selectedCurrencyPublisher: Published<CurrencyCode>.Publisher { $selectedCurrency }
+        var selectedCurrency: CurrencyCode = "USD"
+        private var continuation: AsyncStream<CurrencyCode>.Continuation?
+        var selectedCurrencyStream: AsyncStream<CurrencyCode> {
+            AsyncStream { cont in
+                continuation = cont
+                cont.onTermination = { [weak self] _ in self?.continuation = nil }
+                cont.yield(selectedCurrency)
+            }
+        }
         func setCurrency(_ currencyCode: CurrencyCode) {
             selectedCurrency = currencyCode
+            continuation?.yield(currencyCode)
         }
     }
 

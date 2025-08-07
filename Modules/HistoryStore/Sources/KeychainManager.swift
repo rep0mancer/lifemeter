@@ -63,7 +63,7 @@ public class KeychainManager {
         guard let data = retrieveData(for: currencyKey),
               let currency = String(data: data, encoding: .utf8)
         else {
-            return Locale.current.currency?.identifier ?? "EUR"
+            return Locale.current.currencyCode ?? "EUR"
         }
         return currency
     }

@@ -16,7 +16,7 @@ public final class CurrencyStore: ObservableObject {
     }
 
     private func observe() async {
-        for await value in await manager.selectedCurrencyPublisher.values {
+        for await value in await manager.selectedCurrencyStream {
             selected = value
         }
     }
